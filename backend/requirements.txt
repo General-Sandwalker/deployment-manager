@@ -1,0 +1,16 @@
+fastapi[standard]
+python-multipart
+sqlalchemy
+psycopg2-binary
+python-jose
+passlib
+gitpython
+typer
+python-dotenv
+alembic
+pydantic
+rich
+pydantic-settings
+prompt_toolkit
+requests
+bcrypt
