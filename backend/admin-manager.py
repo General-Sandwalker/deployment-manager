@@ -5,12 +5,11 @@ import re
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
 import psycopg2
-from psycopg2.extras import DictCursor, RealDictCursor
+from psycopg2.extras import RealDictCursor
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.shortcuts import confirm, radiolist_dialog, button_dialog
+from prompt_toolkit.shortcuts import confirm
 from prompt_toolkit.styles import Style
-from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -71,7 +70,7 @@ class AdminManager(DatabaseManager):
         try:
             with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("""
-                    SELECT id, email, full_name, is_admin, is_active, created_at
+                    SELECT id, email, full_name, is_admin, is_active, created_at, plan_expires_at
                     FROM users 
                     ORDER BY created_at DESC
                 """)
@@ -81,16 +80,15 @@ class AdminManager(DatabaseManager):
             return []
 
     def toggle_admin(self, user_id: int) -> bool:
-        """Toggle admin status for a user"""
+        """Toggle admin status for a user (without updated_at)"""
         try:
             with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("""
                     UPDATE users 
-                    SET is_admin = NOT is_admin,
-                        updated_at = %s
+                    SET is_admin = NOT is_admin
                     WHERE id = %s
                     RETURNING id, email, is_admin
-                """, (datetime.utcnow(), user_id))
+                """, (user_id,))
                 if result := cursor.fetchone():
                     status = "ADMIN" if result['is_admin'] else "NORMAL"
                     print(f"\nUser {result['email']} status set to {status}")
@@ -107,18 +105,20 @@ class AdminManager(DatabaseManager):
             print("No users found")
             return
         
-        print("\n{:<5} {:<30} {:<25} {:<10} {:<10} {:<20}".format(
-            "ID", "Email", "Name", "Admin", "Active", "Created At"
+        print("\n{:<5} {:<30} {:<25} {:<10} {:<10} {:<20} {:<20}".format(
+            "ID", "Email", "Name", "Admin", "Active", "Created At", "Plan Expires"
         ))
-        print("-" * 100)
+        print("-" * 120)
         for user in users:
-            print("{:<5} {:<30} {:<25} {:<10} {:<10} {:<20}".format(
+            expires_at = user['plan_expires_at'].strftime('%Y-%m-%d') if user['plan_expires_at'] else "Never"
+            print("{:<5} {:<30} {:<25} {:<10} {:<10} {:<20} {:<20}".format(
                 user['id'],
                 user['email'],
                 user.get('full_name', ''),
                 "Yes" if user['is_admin'] else "No",
                 "Yes" if user['is_active'] else "No",
-                user['created_at'].strftime('%Y-%m-%d %H:%M')
+                user['created_at'].strftime('%Y-%m-%d %H:%M'),
+                expires_at
             ))
         print()
 
@@ -152,7 +152,7 @@ class AdminManager(DatabaseManager):
                 "\nAdmin Manager - Main Menu\n"
                 "1. List all users\n"
                 "2. Manage admin privileges\n"
-                "3. Exit \n\n"
+                "3. Exit\n\n"
                 "Enter your choice (1-3): ",
                 completer=WordCompleter(['1', '2', '3']),
             ).strip()
