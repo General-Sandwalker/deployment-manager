@@ -19,12 +19,16 @@ from ...crud.website import (
     update_website,
     delete_website,
     get_all_websites,
+    get_websites_by_status
 )
 from ...services.deployment import WebsiteProcessManager
 from ...core.config import settings
 
+# Create two separate routers for better organization
 router = APIRouter(tags=["websites"])
+admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
+# User website routes
 @router.post("/websites/", response_model=WebsiteSchema, status_code=status.HTTP_201_CREATED)
 async def create_new_website(
     website: WebsiteCreate,
@@ -139,166 +143,6 @@ async def delete_website_route(
     delete_website(db, website_id)
     return {"ok": True}
 
-@router.get("/admin/websites/", response_model=List[WebsiteSchema])
-def admin_read_all_websites(
-    skip: int = 0,
-    limit: int = 100,
-    include_expired: bool = False,
-    status: Optional[WebsiteStatus] = None,
-    db: Session = Depends(get_db),
-    admin_user: DBUser = Depends(get_current_admin)
-):
-    """
-    ADMIN ONLY: Get all websites with filtering options
-    """
-    # Import the function here to avoid circular import
-    from ...crud.website import get_websites_by_status
-    
-    if status:
-        return get_websites_by_status(db, status, skip=skip, limit=limit)
-    else:
-        return get_all_websites(db, skip=skip, limit=limit, only_active=not include_expired)
-
-@router.get(
-    "/admin/websites/{website_id}",
-    response_model=WebsiteSchema,
-    responses={404: {"description": "Website not found"}}
-)
-def admin_read_website(
-    website_id: int,
-    db: Session = Depends(get_db),
-    admin_user: DBUser = Depends(get_current_admin)
-):
-    """
-    ADMIN ONLY: Get any website details
-    """
-    db_website = get_website(db, website_id)
-    if not db_website:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Website not found"
-        )
-    return db_website
-
-@router.put(
-    "/admin/websites/{website_id}",
-    response_model=WebsiteSchema,
-    responses={404: {"description": "Website not found"}}
-)
-def admin_update_website(
-    website_id: int,
-    website_update: WebsiteUpdate,
-    db: Session = Depends(get_db),
-    admin_user: DBUser = Depends(get_current_admin)
-):
-    """
-    ADMIN ONLY: Update any website details
-    """
-    db_website = get_website(db, website_id)
-    if not db_website:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Website not found"
-        )
-    return update_website(db, website_id, website_update)
-
-@router.post(
-    "/admin/websites/{website_id}/start",
-    response_model=WebsiteSchema,
-    responses={
-        400: {"description": "Website already running"},
-        404: {"description": "Website not found"},
-        500: {"description": "Deployment failed"}
-    }
-)
-async def admin_start_website(
-    website_id: int,
-    db: Session = Depends(get_db),
-    admin_user: DBUser = Depends(get_current_admin)
-):
-    """
-    ADMIN ONLY: Start any website
-    """
-    db_website = get_website(db, website_id)
-    if not db_website:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Website not found"
-        )
-    
-    if db_website.status == WebsiteStatus.RUNNING:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Website already running"
-        )
-    
-    try:
-        # Get the website owner's info for deploying
-        owner = db_website.owner
-        
-        manager = WebsiteProcessManager()
-        port = manager.deploy_static_site(
-            db,
-            db_website.git_repo,
-            db_website.name,
-            owner.id
-        )
-        
-        db_website.status = WebsiteStatus.RUNNING
-        db_website.pid = port  # This should be the process ID
-        db.commit()
-        db.refresh(db_website)
-        
-        return db_website
-    except Exception as e:
-        db_website.status = WebsiteStatus.ERROR
-        db_website.deployment_log = str(e)
-        db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Deployment failed: {str(e)}"
-        )
-
-@router.post(
-    "/admin/websites/{website_id}/stop",
-    response_model=WebsiteSchema,
-    responses={
-        400: {"description": "Website not running"},
-        404: {"description": "Website not found"},
-        500: {"description": "Failed to stop website"}
-    }
-)
-async def admin_stop_website(
-    website_id: int,
-    db: Session = Depends(get_db),
-    admin_user: DBUser = Depends(get_current_admin)
-):
-    """
-    ADMIN ONLY: Stop any running website
-    """
-    db_website = get_website(db, website_id)
-    if not db_website:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Website not found"
-        )
-    
-    if db_website.status != WebsiteStatus.RUNNING:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Website not running"
-        )
-    
-    manager = WebsiteProcessManager()
-    stopped = manager.stop_site(db_website.port)
-    
-    db_website.status = WebsiteStatus.STOPPED
-    db_website.pid = None
-    db.commit()
-    db.refresh(db_website)
-    
-    return db_website
-
 @router.post(
     "/websites/{website_id}/redeploy",
     response_model=WebsiteSchema,
@@ -353,3 +197,184 @@ async def redeploy_website(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Redeployment failed: {str(e)}"
         )
+
+# Admin website routes
+@admin_router.get("/websites/", response_model=List[WebsiteSchema])
+def admin_read_all_websites(
+    skip: int = 0,
+    limit: int = 100,
+    include_expired: bool = False,
+    status: Optional[WebsiteStatus] = None,
+    db: Session = Depends(get_db),
+    admin_user: DBUser = Depends(get_current_admin)
+):
+    """ADMIN ONLY: Get all websites with filtering options"""
+    if status:
+        return get_websites_by_status(db, status, skip=skip, limit=limit)
+    else:
+        return get_all_websites(db, skip=skip, limit=limit, only_active=not include_expired)
+
+@admin_router.get(
+    "/websites/{website_id}",
+    response_model=WebsiteSchema,
+    responses={404: {"description": "Website not found"}}
+)
+def admin_read_website(
+    website_id: int,
+    db: Session = Depends(get_db),
+    admin_user: DBUser = Depends(get_current_admin)
+):
+    """ADMIN ONLY: Get any website details"""
+    db_website = get_website(db, website_id)
+    if not db_website:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Website not found"
+        )
+    return db_website
+
+@admin_router.put(
+    "/websites/{website_id}",
+    response_model=WebsiteSchema,
+    responses={404: {"description": "Website not found"}}
+)
+def admin_update_website(
+    website_id: int,
+    website_update: WebsiteUpdate,
+    db: Session = Depends(get_db),
+    admin_user: DBUser = Depends(get_current_admin)
+):
+    """ADMIN ONLY: Update any website details"""
+    db_website = get_website(db, website_id)
+    if not db_website:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Website not found"
+        )
+    return update_website(db, website_id, website_update)
+
+@admin_router.delete(
+    "/websites/{website_id}",
+    responses={
+        404: {"description": "Website not found"},
+        500: {"description": "Failed to cleanup website"}
+    }
+)
+async def admin_delete_website(
+    website_id: int,
+    db: Session = Depends(get_db),
+    admin_user: DBUser = Depends(get_current_admin)
+):
+    """ADMIN ONLY: Delete any website and cleanup resources"""
+    db_website = get_website(db, website_id)
+    if not db_website:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Website not found"
+        )
+    
+    manager = WebsiteProcessManager()
+    # Get the website owner's info for cleanup
+    owner_id = db_website.user_id
+    
+    if not manager.delete_site(db, db_website.name, db_website.port, owner_id):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to cleanup website resources"
+        )
+    
+    delete_website(db, website_id)
+    return {"ok": True, "message": f"Website {website_id} successfully deleted"}
+
+@admin_router.post(
+    "/websites/{website_id}/start",
+    response_model=WebsiteSchema,
+    responses={
+        400: {"description": "Website already running"},
+        404: {"description": "Website not found"},
+        500: {"description": "Deployment failed"}
+    }
+)
+async def admin_start_website(
+    website_id: int,
+    db: Session = Depends(get_db),
+    admin_user: DBUser = Depends(get_current_admin)
+):
+    """ADMIN ONLY: Start any website"""
+    db_website = get_website(db, website_id)
+    if not db_website:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Website not found"
+        )
+    
+    if db_website.status == WebsiteStatus.RUNNING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Website already running"
+        )
+    
+    try:
+        # Get the website owner's info for deploying
+        owner = db_website.owner
+        
+        manager = WebsiteProcessManager()
+        port = manager.deploy_static_site(
+            db,
+            db_website.git_repo,
+            db_website.name,
+            owner.id
+        )
+        
+        db_website.status = WebsiteStatus.RUNNING
+        db_website.pid = port  # This should be the process ID
+        db.commit()
+        db.refresh(db_website)
+        
+        return db_website
+    except Exception as e:
+        db_website.status = WebsiteStatus.ERROR
+        db_website.deployment_log = str(e)
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Deployment failed: {str(e)}"
+        )
+
+@admin_router.post(
+    "/websites/{website_id}/stop",
+    response_model=WebsiteSchema,
+    responses={
+        400: {"description": "Website not running"},
+        404: {"description": "Website not found"},
+        500: {"description": "Failed to stop website"}
+    }
+)
+async def admin_stop_website(
+    website_id: int,
+    db: Session = Depends(get_db),
+    admin_user: DBUser = Depends(get_current_admin)
+):
+    """ADMIN ONLY: Stop any running website"""
+    db_website = get_website(db, website_id)
+    if not db_website:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Website not found"
+        )
+    
+    if db_website.status != WebsiteStatus.RUNNING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Website not running"
+        )
+    
+    manager = WebsiteProcessManager()
+    stopped = manager.stop_site(db_website.port)
+    
+    db_website.status = WebsiteStatus.STOPPED
+    db_website.pid = None
+    db.commit()
+    db.refresh(db_website)
+    
+    return db_website

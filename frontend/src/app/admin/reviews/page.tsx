@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,7 +6,7 @@ import { useReviews } from '@/context/ReviewContext';
 import ReviewCard from '@/components/shared/ReviewCard';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import { Input } from '@/components/ui/input';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, UserCheck } from 'lucide-react';
 import { Review } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,18 +18,20 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export default function ReviewsAdminPage() {
-  const { reviews, isLoading, fetchAllReviews, adminDeleteReview } = useReviews();
+  const { reviews, isLoading, adminGetReviews, adminDeleteReview } = useReviews();
   const [filteredReviews, setFilteredReviews] = useState<Review[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
+  const [websiteFilter, setWebsiteFilter] = useState<number | undefined>(undefined);
+  const [userFilter, setUserFilter] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const loadReviews = async () => {
-      await fetchAllReviews();
+      await adminGetReviews(websiteFilter, userFilter);
     };
     
     loadReviews();
-  }, [fetchAllReviews]);
+  }, [adminGetReviews, websiteFilter, userFilter]);
 
   useEffect(() => {
     if (reviews.length > 0) {
@@ -39,7 +42,8 @@ export default function ReviewsAdminPage() {
         filtered = filtered.filter(review => 
           review.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (review.user?.email && review.user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (review.user?.full_name && review.user.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
+          (review.user?.full_name && review.user.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (review.website?.name && review.website.name.toLowerCase().includes(searchTerm.toLowerCase()))
         );
       }
       
@@ -79,6 +83,11 @@ export default function ReviewsAdminPage() {
     }
   };
 
+  const clearFilters = () => {
+    setWebsiteFilter(undefined);
+    setUserFilter(undefined);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -96,12 +105,31 @@ export default function ReviewsAdminPage() {
         </span>
       </div>
 
+      {/* Active Filters */}
+      {(websiteFilter !== undefined || userFilter !== undefined) && (
+        <div className="bg-cosmic-accent/20 p-3 rounded-md flex items-center justify-between">
+          <div className="text-sm">
+            <span className="font-medium">Active Filters:</span>
+            {websiteFilter && <span className="ml-2">Website ID: {websiteFilter}</span>}
+            {userFilter && <span className="ml-2">User ID: {userFilter}</span>}
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={clearFilters}
+            className="text-cosmic-highlight hover:bg-cosmic-light"
+          >
+            Clear Filters
+          </Button>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
           <Input
-            placeholder="Search by content or user..."
+            placeholder="Search by content, user or website..."
             value={searchTerm}
             onChange={handleSearch}
             className="pl-10 bg-[var(--cosmic-light)] border-[var(--cosmic-accent)] text-[var(--text-primary)]"

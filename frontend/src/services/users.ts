@@ -1,31 +1,83 @@
 // src/services/users.ts
-import { User, UserCreate, UserUpdate } from "@/types/user";
-import { apiGet, apiPost, apiPut, apiDelete } from "./api";
+import { User, UserCreate, UserUpdate } from '@/types/user';
 
-export const createUser = async (user: UserCreate): Promise<User> => {
-  return apiPost<User>("/users/", user);
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export const createUser = async (userData: UserCreate): Promise<User> => {
+  const response = await fetch(`${API_URL}/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(userData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Failed to create user');
+  }
+
+  return response.json();
 };
 
-export const getUsers = async (
-  token: string,
-  skip: number = 0,
-  limit: number = 100
-): Promise<User[]> => {
-  return apiGet<User[]>(`/users/?skip=${skip}&limit=${limit}`, token);
+export const getUsers = async (token: string): Promise<User[]> => {
+  const response = await fetch(`${API_URL}/admin/users`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch users');
+  }
+
+  return response.json();
 };
 
-export const getUser = async (userId: number, token: string): Promise<User> => {
-  return apiGet<User>(`/users/${userId}`, token);
+export const getUser = async (id: number, token: string): Promise<User> => {
+  const response = await fetch(`${API_URL}/admin/users/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch user');
+  }
+
+  return response.json();
 };
 
 export const updateUser = async (
-  userId: number,
-  updates: UserUpdate,
+  id: number,
+  userData: UserUpdate,
   token: string
 ): Promise<User> => {
-  return apiPut<User>(`/users/${userId}`, updates, token);
+  const response = await fetch(`${API_URL}/admin/users/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(userData),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update user');
+  }
+
+  return response.json();
 };
 
-export const deleteUser = async (userId: number, token: string): Promise<void> => {
-  return apiDelete(`/users/${userId}`, token);
+export const deleteUser = async (id: number, token: string): Promise<void> => {
+  const response = await fetch(`${API_URL}/admin/users/${id}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to delete user');
+  }
 };
