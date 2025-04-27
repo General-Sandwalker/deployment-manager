@@ -5,6 +5,7 @@ from ..schemas.user import UserCreate, UserUpdate
 from ..core.security import get_password_hash
 from typing import List, Optional
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -65,10 +66,14 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[
         update_data = user_update.dict(exclude_unset=True)
         
         if "password" in update_data:
-            db_user.hashed_password = get_password_hash(update_data["password"])
+            update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+        
+        # Set updated_at timestamp
+        update_data["updated_at"] = datetime.utcnow()
         
         for key, value in update_data.items():
-            setattr(db_user, key, value)
+            if hasattr(db_user, key):
+                setattr(db_user, key, value)
         
         db.commit()
         db.refresh(db_user)

@@ -19,8 +19,8 @@ export interface UserCreate {
 export interface UserUpdate {
   email?: string;
   full_name?: string;
+  password?: string;
   is_active?: boolean;
   is_admin?: boolean;
-  password?: string;
   plan_expires_at?: string;
 }

@@ -1,39 +1,29 @@
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import { WebsiteStatus } from '@/types';
+import { Badge } from '@/components/ui/badge';
 
 interface StatusBadgeProps {
   status: WebsiteStatus;
-  className?: string;
 }
 
-type StatusVariant = 'success' | 'destructive' | 'warning' | 'default' | 'outline';
-
-interface StatusConfig {
-  variant: StatusVariant;
-  text: string;
-}
-
-export default function StatusBadge({ status, className }: StatusBadgeProps) {
-  const statusMap: Record<WebsiteStatus, StatusConfig> = {
-    [WebsiteStatus.RUNNING]: { variant: 'success', text: 'Running' },
-    [WebsiteStatus.STOPPED]: { variant: 'destructive', text: 'Stopped' },
-    [WebsiteStatus.DEPLOYING]: { variant: 'warning', text: 'Deploying' },
-    [WebsiteStatus.ERROR]: { variant: 'destructive', text: 'Error' },
-    [WebsiteStatus.PENDING]: { variant: 'warning', text: 'Pending' }
+export default function StatusBadge({ status }: StatusBadgeProps) {
+  const getStatusStyles = () => {
+    switch (status) {
+      case WebsiteStatus.RUNNING:
+        return 'bg-green-500 hover:bg-green-600';
+      case WebsiteStatus.STOPPED:
+        return 'bg-red-500 hover:bg-red-600';
+      case WebsiteStatus.DEPLOYING:
+        return 'bg-yellow-500 hover:bg-yellow-600';
+      case WebsiteStatus.ERROR:
+        return 'bg-red-500 hover:bg-red-600';
+      default:
+        return 'bg-gray-500 hover:bg-gray-600';
+    }
   };
-  
-  // Ensure we have a valid status config, fallback to default if not found
-  const statusInfo = status in statusMap 
-    ? statusMap[status] 
-    : { variant: 'default', text: String(status) };
 
   return (
-    <Badge 
-      variant={statusInfo.variant}
-      className={cn('capitalize', className)}
-    >
-      {statusInfo.text}
+    <Badge className={getStatusStyles()}>
+      {status.charAt(0).toUpperCase() + status.slice(1)}
     </Badge>
   );
 }

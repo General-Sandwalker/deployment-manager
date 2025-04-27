@@ -6,7 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // User routes
 export const getUserWebsites = async (token: string): Promise<Website[]> => {
-  const response = await fetch(`${API_URL}/websites/user`, {
+  const response = await fetch(`${API_URL}/websites/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -34,7 +34,7 @@ export const getWebsite = async (id: number, token: string): Promise<Website> =>
 };
 
 export const createWebsite = async (website: WebsiteCreate, token: string): Promise<Website> => {
-  const response = await fetch(`${API_URL}/websites`, {
+  const response = await fetch(`${API_URL}/websites/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -44,8 +44,7 @@ export const createWebsite = async (website: WebsiteCreate, token: string): Prom
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || 'Failed to create website');
+    throw new Error('Failed to create website');
   }
 
   return response.json();
@@ -57,7 +56,7 @@ export const updateWebsite = async (
   token: string
 ): Promise<Website> => {
   const response = await fetch(`${API_URL}/websites/${id}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
@@ -132,7 +131,7 @@ export const redeployWebsite = async (id: number, token: string): Promise<Websit
 
 // Admin routes
 export const adminGetAllWebsites = async (token: string): Promise<Website[]> => {
-  const response = await fetch(`${API_URL}/admin/websites`, {
+  const response = await fetch(`${API_URL}/admin/websites/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -151,7 +150,7 @@ export const adminUpdateWebsite = async (
   token: string
 ): Promise<Website> => {
   const response = await fetch(`${API_URL}/admin/websites/${id}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
@@ -204,6 +203,21 @@ export const adminStopWebsite = async (id: number, token: string): Promise<Websi
 
   if (!response.ok) {
     throw new Error('Failed to stop website as admin');
+  }
+
+  return response.json();
+};
+
+export const adminRedeployWebsite = async (id: number, token: string): Promise<Website> => {
+  const response = await fetch(`${API_URL}/admin/websites/${id}/redeploy`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to redeploy website as admin');
   }
 
   return response.json();

@@ -1,5 +1,4 @@
-'use client';
-
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {
@@ -7,20 +6,17 @@ interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-export default function LoadingSpinner({ 
-  className, 
-  size = 'md' 
-}: LoadingSpinnerProps) {
+export default function LoadingSpinner({ className, size = 'md' }: LoadingSpinnerProps) {
   const sizeClasses = {
-    sm: 'h-5 w-5 border-2',
-    md: 'h-8 w-8 border-2',
-    lg: 'h-12 w-12 border-3',
+    sm: 'h-4 w-4',
+    md: 'h-8 w-8',
+    lg: 'h-12 w-12',
   };
 
   return (
-    <div 
+    <Loader2
       className={cn(
-        "animate-spin rounded-full border-t-transparent border-cosmic-highlight",
+        'animate-spin text-[var(--cosmic-highlight)]',
         sizeClasses[size],
         className
       )}

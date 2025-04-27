@@ -1,68 +1,58 @@
-import { cn } from '@/lib/utils';
+'use client';
+
+import { Card } from '@/components/ui/card';
 import { ArrowUp, ArrowDown, ArrowRight } from 'lucide-react';
+import { ReactNode } from 'react';
 
 interface StatCardProps {
   title: string;
   value: string | number;
-  icon: React.ReactNode;
+  icon: ReactNode;
   trend?: 'up' | 'down' | 'neutral';
-  description?: string;
-  className?: string;
-  trendValue?: string; // Added trendValue as an optional property
+  trendValue?: string;
 }
 
-export default function StatCard({
-  title,
-  value,
-  icon,
-  trend,
-  description,
-  className,
+export default function StatCard({ 
+  title, 
+  value, 
+  icon, 
+  trend = 'neutral',
+  trendValue 
 }: StatCardProps) {
   const trendIcons = {
-    up: <ArrowUp size={16} className="text-[var(--success)]" />,
-    down: <ArrowDown size={16} className="text-[var(--danger)]" />,
-    neutral: <ArrowRight size={16} className="text-[var(--info)]" />,
+    up: <ArrowUp size={16} className="text-green-500" />,
+    down: <ArrowDown size={16} className="text-red-500" />,
+    neutral: <ArrowRight size={16} className="text-yellow-500" />,
   };
 
-  const trendTextClasses = {
-    up: 'text-[var(--success)]',
-    down: 'text-[var(--danger)]',
-    neutral: 'text-[var(--info)]',
+  const trendTextColor = {
+    up: 'text-green-500',
+    down: 'text-red-500',
+    neutral: 'text-yellow-500',
   };
 
   return (
-    <div className={cn(
-      'rounded-xl border border-[var(--cosmic-accent)] bg-[var(--cosmic-blue)]',
-      'text-[var(--text-primary)] shadow-sm',
-      className
-    )}>
-      <div className="flex flex-row items-center justify-between p-6 pb-2">
-        <h3 className="text-sm font-medium text-[var(--cosmic-highlight)]">
-          {title}
-        </h3>
-        {icon}
-      </div>
-      <div className="p-6 pt-0">
-        <div className="text-2xl font-bold">{value}</div>
-        {description && (
-          <p className="text-xs text-[var(--cosmic-highlight)] mt-1">
-            {description}
-          </p>
-        )}
-        {trend && (
-          <div className={cn(
-            'text-xs mt-1 flex items-center space-x-1',
-            trendTextClasses[trend]
-          )}>
+    <Card className="hover:border-[var(--cosmic-highlight)] transition-colors">
+      <div className="p-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <p className="text-sm text-[var(--text-tertiary)] font-medium">{title}</p>
+            <h3 className="text-2xl font-bold mt-1 text-[var(--text-primary)]">{value}</h3>
+          </div>
+          <div className="p-3 rounded-full bg-[var(--cosmic-light)] text-[var(--cosmic-highlight)]">
+            {icon}
+          </div>
+        </div>
+
+        {trendValue && (
+          <div className="mt-4 text-sm flex items-center space-x-1">
             {trendIcons[trend]}
-            <span>
-              {trend === 'up' ? 'Increased' : 
-               trend === 'down' ? 'Decreased' : 'No change'}
+            <span className={trendTextColor[trend]}>
+              {trendValue}
             </span>
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

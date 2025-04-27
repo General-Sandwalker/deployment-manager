@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
@@ -13,6 +13,14 @@ engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,  # Recommended for PostgreSQL
 )
+
+# Explicitly create the public schema if it doesn't exist
+try:
+    with engine.connect() as conn:
+        conn.execute(text("CREATE SCHEMA IF NOT EXISTS public"))
+        conn.commit()
+except Exception as e:
+    print(f"Warning: Could not create schema: {e}")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

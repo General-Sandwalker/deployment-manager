@@ -10,6 +10,9 @@ class Review(Base):
     content = Column(String)
     rating = Column(Integer)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    website_id = Column(Integer, ForeignKey("websites.id", ondelete="CASCADE"))
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="reviews")
+    website = relationship("Website", back_populates="reviews")

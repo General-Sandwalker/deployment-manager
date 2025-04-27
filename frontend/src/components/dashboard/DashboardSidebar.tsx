@@ -5,65 +5,58 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
-  Users, 
   Globe, 
   Star, 
   Settings,
   ChevronRight
 } from 'lucide-react';
 
-const adminRoutes = [
+const dashboardRoutes = [
   {
-    label: 'Dashboard',
+    label: 'Overview',
     icon: <LayoutDashboard className="mr-2 h-4 w-4" />,
-    href: '/admin',
-    pattern: /^\/admin$/,
+    href: '/dashboard',
+    pattern: /^\/dashboard$/,
   },
   {
-    label: 'Users',
-    icon: <Users className="mr-2 h-4 w-4" />,
-    href: '/admin/users',
-    pattern: /^\/admin\/users/,
-  },
-  {
-    label: 'Websites',
+    label: 'My Websites',
     icon: <Globe className="mr-2 h-4 w-4" />,
-    href: '/admin/websites',
-    pattern: /^\/admin\/websites/,
+    href: '/dashboard/websites',
+    pattern: /^\/dashboard\/websites/,
   },
   {
-    label: 'Reviews',
+    label: 'My Reviews',
     icon: <Star className="mr-2 h-4 w-4" />,
-    href: '/admin/reviews',
-    pattern: /^\/admin\/reviews/,
+    href: '/dashboard/reviews',
+    pattern: /^\/dashboard\/reviews/,
   },
   {
-    label: 'Settings',
+    label: 'Account Settings',
     icon: <Settings className="mr-2 h-4 w-4" />,
-    href: '/admin/settings',
-    pattern: /^\/admin\/settings/,
+    href: '/dashboard/settings',
+    pattern: /^\/dashboard\/settings/,
   },
 ];
 
-export default function AdminSidebar() {
+export default function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="h-screen border-r border-[var(--cosmic-accent)] bg-[var(--cosmic-blue)] w-64 fixed top-0 left-0 pt-16">
+    <div className="h-screen border-r border-[var(--cosmic-accent)] bg-[var(--cosmic-blue)] w-64 fixed top-0 left-0 pt-16 hidden md:block">
       <div className="px-3 py-4">
         <h2 className="mb-4 px-4 text-lg font-semibold text-[var(--cosmic-highlight)]">
-          Admin Control
+          Dashboard
         </h2>
         <div className="space-y-1 py-2">
-          {adminRoutes.map((route) => (
+          {dashboardRoutes.map((route) => (
             <Link 
               key={route.href}
               href={route.href}
               className={cn(
-                "flex items-center justify-between py-2 px-4 text-sm font-medium rounded-md",
+                "flex items-center justify-between py-2 px-4 text-sm font-medium rounded-md transition-colors",
                 route.pattern.test(pathname)
-                  ? "bg-[var(--cosmic-light)] text-[var(--cosmic-highlight)]"
-                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--cosmic-light)]/50"
+                  ? "bg-[var(--cosmic-highlight)] text-white shadow-sm"
+                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--cosmic-light)] border border-[var(--cosmic-accent)]"
               )}
             >
               <div className="flex items-center">

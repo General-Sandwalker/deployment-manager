@@ -2,42 +2,38 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, ReactNode } from 'react';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
 
-const publicRoutes = ['/', '/login', '/register'];
+interface AuthGuardProps {
+  children: ReactNode;
+  adminOnly?: boolean;
+}
 
-export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+export default function AuthGuard({ children, adminOnly = false }: AuthGuardProps) {
+  const { user, isLoading, token } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    // Allow the auth check to complete
     if (isLoading) return;
 
-    // If not authenticated and trying to access a protected route
-    if (!user && !publicRoutes.includes(pathname)) {
-      router.push('/login');
-      return;
-    }
-
-    // If authenticated but trying to access auth pages
-    if (user && (pathname === '/login' || pathname === '/register')) {
+    if (!token) {
+      // Redirect to login if no token
+      router.push(`/login?returnUrl=${encodeURIComponent(pathname)}`);
+    } else if (adminOnly && !user?.is_admin) {
+      // If admin route but user is not admin
       router.push('/dashboard');
-      return;
     }
+  }, [token, isLoading, router, pathname, adminOnly, user]);
 
-    // Special case: if authenticated and on landing page, allow but could redirect to dashboard
-    if (user && pathname === '/') {
-      // Optional: uncomment if you want to redirect to dashboard when logged in
-      // router.push('/dashboard');
-    }
-  }, [user, isLoading, pathname, router]);
-
-  if (isLoading) {
+  // Show loading state while checking authentication
+  if (isLoading || !token || (adminOnly && !user?.is_admin)) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--cosmic-highlight)]"></div>
+      <div className="flex justify-center items-center h-screen bg-[var(--cosmic-dark)]">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }

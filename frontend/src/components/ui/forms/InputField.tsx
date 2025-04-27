@@ -1,30 +1,26 @@
 import { Input, InputProps } from '@/components/ui/input';
-import { Label } from '@/components/ui/lable';
-import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 
 interface InputFieldProps extends InputProps {
-  label?: string;
-  className?: string;
+  label: string;
+  id: string;
   error?: string;
 }
 
-export default function InputField({
-  label,
-  className,
-  error,
-  ...props
-}: InputFieldProps) {
+export default function InputField({ label, id, error, className, ...props }: InputFieldProps) {
   return (
-    <div className={cn('space-y-2', className)}>
-      {label && <Label className="text-cosmic-highlight">{label}</Label>}
+    <div className="space-y-2">
+      <Label htmlFor={id} className="text-[var(--text-primary)]">
+        {label}
+      </Label>
       <Input
-        className={cn(
-          'bg-cosmic-light border-cosmic-accent text-white focus-visible:ring-cosmic-highlight',
-          error && 'border-danger'
-        )}
+        id={id}
         {...props}
+        className={`bg-[var(--cosmic-light)] border-[var(--cosmic-accent)] text-[var(--text-primary)] ${
+          error ? 'border-red-500' : ''
+        } ${className || ''}`}
       />
-      {error && <p className="text-danger text-sm">{error}</p>}
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
   );
 }

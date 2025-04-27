@@ -1,11 +1,11 @@
 'use client';
 import { useState, ReactNode } from 'react';
 import { useWebsites } from '@/context/WebsiteContext';
-import { WebsiteCreate } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/lable';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import { Plus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -19,30 +19,35 @@ interface CreateWebsiteModalProps {
 }
 
 export default function CreateWebsiteModal({ children }: CreateWebsiteModalProps) {
+  const { createWebsite } = useWebsites();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState<WebsiteCreate>({
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
     name: '',
     git_repo: '',
   });
-  const { createWebsite, isLoading } = useWebsites();
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    
     try {
       await createWebsite(formData.name, formData.git_repo);
       toast({
-        title: "Success",
-        description: "Website created successfully",
+        title: 'Success',
+        description: 'Website created successfully! Deployment in progress.',
       });
-      setOpen(false);
       setFormData({ name: '', git_repo: '' });
+      setOpen(false);
     } catch (error) {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create website",
-        variant: "destructive"
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create website',
+        variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -50,21 +55,18 @@ export default function CreateWebsiteModal({ children }: CreateWebsiteModalProps
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children || (
-          <Button
-            variant="default"
-            className="bg-[var(--cosmic-highlight)] hover:bg-[var(--cosmic-highlight)/90]"
-          >
-            Create Website
+          <Button className="bg-[var(--cosmic-highlight)] hover:bg-[var(--cosmic-highlight-dark)]">
+            <Plus className="mr-2 h-4 w-4" />
+            New Website
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-[var(--text-primary)]">
-            Create New Website
-          </DialogTitle>
+          <DialogTitle>Create New Website</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div>
             <Label htmlFor="name" className="text-[var(--cosmic-highlight)]">
               Website Name
@@ -74,10 +76,11 @@ export default function CreateWebsiteModal({ children }: CreateWebsiteModalProps
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="bg-[var(--cosmic-light)] border-[var(--cosmic-accent)] mt-1 text-[var(--text-primary)]"
+              placeholder="My Awesome Website"
               required
             />
           </div>
-
+          
           <div>
             <Label htmlFor="git_repo" className="text-[var(--cosmic-highlight)]">
               Git Repository URL
@@ -104,8 +107,8 @@ export default function CreateWebsiteModal({ children }: CreateWebsiteModalProps
             </Button>
             <Button
               type="submit"
-              className="bg-[var(--cosmic-highlight)] hover:bg-[var(--cosmic-highlight)/90]"
               disabled={isLoading}
+              className="bg-[var(--cosmic-highlight)] hover:bg-[var(--cosmic-highlight-dark)]"
             >
               {isLoading ? 'Creating...' : 'Create Website'}
             </Button>

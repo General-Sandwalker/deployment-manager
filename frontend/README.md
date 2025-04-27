@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Deployment Manager Frontend
+
+A modern web interface for the Deployment Manager application built with Next.js, React, TypeScript, and Tailwind CSS.
+
+## Features
+
+- User authentication and session management
+- Dashboard for website deployment management
+- Administrative interface for system management
+- Responsive design for optimal viewing on various devices
+- Real-time status updates
+- Intuitive website creation, deployment, and management
+
+## Architecture
+
+The frontend follows a modern React architecture:
+
+- **Next.js App Router**: Page-based routing system with server and client components
+- **Context API**: State management using React Context
+- **TypeScript**: Static type checking for improved developer experience
+- **Tailwind CSS**: Utility-first CSS framework for styling
+- **Shadcn UI**: Component library providing accessible UI elements
+
+## Directory Structure
+
+- `src/`
+  - `app/`: Next.js app router pages
+    - `dashboard/`: User dashboard pages
+    - `admin/`: Admin pages (accessible only to admins)
+    - `login/` & `register/`: Authentication pages
+  - `components/`: Reusable React components
+    - `shared/`: Shared components used across the application
+    - `admin/`: Admin-specific components
+    - `ui/`: UI components based on shadcn/ui
+  - `context/`: React Context providers
+  - `lib/`: Utility functions
+  - `services/`: API service functions
+  - `types/`: TypeScript type definitions
+  - `styles/`: Global styles
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ 
+- npm or yarn
+
+### Development Setup
+
+1. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+2. Configure environment variables by creating a `.env.local` file:
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
+```
+
+3. Start the development server:
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Building for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+# or
+yarn build
+```
 
-## Learn More
+## User Guide
 
-To learn more about Next.js, take a look at the following resources:
+### Normal User Workflow
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Register/Login**: Create an account or log in
+2. **Dashboard**: View all your deployed websites
+3. **Create Website**: Click "Create Website" to deploy a new static site from a Git repository
+4. **Manage Websites**: 
+   - Start/Stop websites
+   - Redeploy websites when you update the source code
+   - View website status and access deployed sites
+   - Delete websites when no longer needed
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Admin Workflow
 
-## Deploy on Vercel
+1. **Admin Dashboard**: Access the admin area to view all user websites
+2. **User Management**: View and manage user accounts
+3. **Website Management**: 
+   - View all websites across all users
+   - Filter by status or search for specific websites
+   - Perform administrative actions (start, stop, delete) on any website
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The frontend is containerized using Docker and can be deployed using the provided Dockerfile. For production deployment, use Docker Compose as described in the main README.

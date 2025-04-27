@@ -43,12 +43,14 @@ class DatabaseManager:
         
         pattern = r'postgresql\+psycopg2://(?P<user>[^:]+):(?P<password>[^@]+)@(?P<host>[^:]+):(?P<port>\d+)/(?P<dbname>.+)'
         if match := re.match(pattern, db_url):
+            # Add search_path for schema selection
             return (
                 f"host={match.group('host')} "
                 f"port={match.group('port')} "
                 f"dbname={match.group('dbname')} "
                 f"user={match.group('user')} "
-                f"password={match.group('password')}"
+                f"password={match.group('password')} "
+                f"options='-c search_path=public'"
             )
         raise ValueError("Invalid DATABASE_URL format")
 

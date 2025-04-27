@@ -20,6 +20,68 @@ export const createUser = async (userData: UserCreate): Promise<User> => {
   return response.json();
 };
 
+export const getCurrentUser = async (token: string): Promise<User> => {
+  const response = await fetch(`${API_URL}/users/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch current user');
+  }
+
+  return response.json();
+};
+
+export const updateCurrentUser = async (userData: UserUpdate, token: string): Promise<User> => {
+  const response = await fetch(`${API_URL}/users/me`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(userData),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update user profile');
+  }
+
+  return response.json();
+};
+
+export const updateUserSettings = async (settingsData: UserUpdate, token: string): Promise<User> => {
+  const response = await fetch(`${API_URL}/users/me/settings`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(settingsData),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update user settings');
+  }
+
+  return response.json();
+};
+
+export const deleteCurrentUser = async (token: string): Promise<void> => {
+  const response = await fetch(`${API_URL}/users/me`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to delete user account');
+  }
+};
+
+// Admin user management functions
 export const getUsers = async (token: string): Promise<User[]> => {
   const response = await fetch(`${API_URL}/admin/users`, {
     headers: {

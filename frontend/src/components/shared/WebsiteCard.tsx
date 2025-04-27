@@ -81,6 +81,10 @@ export default function WebsiteCard({ website, className, isAdminView = false }:
   
   // Admin view uses adminDeleteWebsite, user view uses regular deleteWebsite
   const handleDelete = () => {
+    if (!confirm(`Are you sure you want to delete "${website.name}"? This action cannot be undone.`)) {
+      return;
+    }
+    
     if (isAdmin && isAdminView) {
       handleAction(() => adminDeleteWebsite(website.id), 'delete');
     } else if (canManageWebsite) {

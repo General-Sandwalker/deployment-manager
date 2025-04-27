@@ -42,6 +42,15 @@ def update_current_user(
     """Update the current user's own profile"""
     return update_user(db, current_user.id, user_update)
 
+@router.post("/users/me/settings", response_model=UserSchema)
+def update_user_settings(
+    user_update: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_user)
+):
+    """Update the current user's settings"""
+    return update_user(db, current_user.id, user_update)
+
 @router.delete("/users/me", status_code=status.HTTP_204_NO_CONTENT)
 def delete_current_user(
     db: Session = Depends(get_db),

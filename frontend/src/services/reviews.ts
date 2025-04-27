@@ -5,7 +5,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // Public routes
 export const getAllReviews = async (): Promise<Review[]> => {
-  const response = await fetch(`${API_URL}/reviews`);
+  const response = await fetch(`${API_URL}/reviews/public/all`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch reviews');
@@ -16,7 +16,7 @@ export const getAllReviews = async (): Promise<Review[]> => {
 
 // User routes
 export const getUserReviews = async (token: string): Promise<Review[]> => {
-  const response = await fetch(`${API_URL}/reviews/user`, {
+  const response = await fetch(`${API_URL}/reviews/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -44,7 +44,7 @@ export const getReview = async (id: number, token: string): Promise<Review> => {
 };
 
 export const createReview = async (review: ReviewCreate, token: string): Promise<Review> => {
-  const response = await fetch(`${API_URL}/reviews`, {
+  const response = await fetch(`${API_URL}/reviews/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ export const updateReview = async (
   token: string
 ): Promise<Review> => {
   const response = await fetch(`${API_URL}/reviews/${id}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,

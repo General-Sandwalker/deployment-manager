@@ -1,71 +1,81 @@
 'use client';
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Star } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { Star } from 'lucide-react';
 
 interface ReviewFormProps {
+  initialData?: {
+    content: string;
+    rating: number;
+  };
   onSubmit: (data: { content: string; rating: number }) => Promise<void>;
-  initialData?: { content: string; rating: number };
   buttonText?: string;
 }
 
-export default function ReviewForm({ 
-  onSubmit, 
-  initialData = { content: '', rating: 5 },
-  buttonText = 'Submit Review'
+export default function ReviewForm({
+  initialData = { content: '', rating: 0 },
+  onSubmit,
+  buttonText = 'Submit'
 }: ReviewFormProps) {
-  const [formData, setFormData] = useState(initialData);
+  const [content, setContent] = useState(initialData.content);
+  const [rating, setRating] = useState(initialData.rating);
+  const [hoveredRating, setHoveredRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await onSubmit(formData);
-      setFormData({ content: '', rating: 5 });
+      await onSubmit({ content, rating });
+      // Form submission was successful
+    } catch (error) {
+      console.error('Error submitting review:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="bg-cosmic-blue rounded-xl p-6 border border-cosmic-accent">
-      <h3 className="text-lg font-semibold mb-4 text-white">Leave a Review</h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex space-x-1">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <div className="mb-2 text-sm font-medium text-[var(--text-primary)]">Rating</div>
+        <div className="flex items-center">
           {[1, 2, 3, 4, 5].map((star) => (
-            <button
+            <Star
               key={star}
-              type="button"
-              onClick={() => setFormData({ ...formData, rating: star })}
-              className="focus:outline-none"
-            >
-              <Star
-                size={24}
-                className={`${star <= formData.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-500'}`}
-              />
-            </button>
+              className={`h-7 w-7 cursor-pointer transition-all ${
+                star <= (hoveredRating || rating)
+                  ? 'text-yellow-400 fill-yellow-400'
+                  : 'text-gray-400'
+              }`}
+              onClick={() => setRating(star)}
+              onMouseEnter={() => setHoveredRating(star)}
+              onMouseLeave={() => setHoveredRating(0)}
+            />
           ))}
         </div>
-        
+      </div>
+      
+      <div>
+        <div className="mb-2 text-sm font-medium text-[var(--text-primary)]">Review</div>
         <Textarea
-          value={formData.content}
-          onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-          className="bg-cosmic-light border-cosmic-accent text-white focus:border-cosmic-highlight"
-          rows={4}
-          placeholder="Share your experience..."
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Write your review here..."
+          className="min-h-[150px] bg-[var(--cosmic-light)] border-[var(--cosmic-accent)] text-[var(--text-primary)]"
           required
         />
-        
-        <Button
-          type="submit"
-          className="bg-cosmic-highlight hover:bg-cosmic-highlight/90 w-full"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Submitting...' : buttonText}
-        </Button>
-      </form>
-    </div>
+      </div>
+      
+      <Button
+        type="submit"
+        disabled={isSubmitting || !content || rating === 0}
+        className="w-full bg-[var(--cosmic-highlight)] hover:bg-[var(--cosmic-highlight-dark)]"
+      >
+        {isSubmitting ? 'Submitting...' : buttonText}
+      </Button>
+    </form>
   );
 }

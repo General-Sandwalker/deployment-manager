@@ -1,34 +1,33 @@
-import { cva, type VariantProps } from "class-variance-authority"
+import * as React from "react"
 import { cn } from "@/lib/utils"
 
-const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-  {
-    variants: {
-      variant: {
-        default: "border-transparent bg-primary text-primary-foreground",
-        secondary: "border-transparent bg-secondary text-secondary-foreground",
-        destructive: "border-transparent bg-destructive text-destructive-foreground",
-        outline: "text-foreground",
-        success: "border-transparent bg-green-500 text-white",
-        warning: "border-transparent bg-yellow-500 text-white",
-        premium: "border-transparent bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "default" | "success" | "destructive" | "outline" | "premium";
+}
+
+function Badge({
+  className,
+  variant = "default",
+  ...props
+}: BadgeProps) {
+  const variantClasses = {
+    default: "bg-[var(--cosmic-accent)] hover:bg-[var(--cosmic-accent)]/80 text-white",
+    success: "bg-green-500 hover:bg-green-600 text-white",
+    destructive: "bg-red-500 hover:bg-red-600 text-white",
+    outline: "text-[var(--text-primary)] border border-[var(--cosmic-accent)]",
+    premium: "bg-[var(--cosmic-highlight)] hover:bg-[var(--cosmic-highlight-dark)] text-white",
   }
-)
 
-interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
-
-function Badge({ className, variant, ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div
+      className={cn(
+        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors",
+        variantClasses[variant],
+        className
+      )}
+      {...props}
+    />
   )
 }
 
-export { Badge, badgeVariants }
+export { Badge }

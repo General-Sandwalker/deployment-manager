@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional
 from enum import Enum
 from ..core.config import settings
+from .user import User
 
 class WebsiteStatus(str, Enum):
     STOPPED = "stopped"
@@ -22,6 +23,7 @@ class WebsiteUpdate(BaseModel):
     git_repo: Optional[str] = Field(None, description="New Git repository URL")
     status: Optional[WebsiteStatus] = None
     expires_at: Optional[datetime] = None
+    custom_domain: Optional[str] = None
 
 class Website(WebsiteBase):
     id: int
@@ -31,7 +33,11 @@ class Website(WebsiteBase):
     deployment_log: Optional[str] = None
     user_id: int
     created_at: datetime
-    expires_at: Optional[datetime]
+    updated_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+    url: Optional[str] = None
+    custom_domain: Optional[str] = None
+    owner: Optional[User] = None
     
     @validator('port')
     def validate_port(cls, port):
