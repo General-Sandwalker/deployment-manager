@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from ..deps import get_db, get_current_user
+from typing import Optional
+from ..deps import get_db, get_current_user, get_current_admin
 from ...models.user import User as DBUser
 from ...models.review import Review as DBReview
 from ...schemas.review import ReviewCreate, ReviewUpdate, Review as ReviewSchema
@@ -75,3 +76,83 @@ def delete_review_route(
         raise HTTPException(status_code=404, detail="Review not found")
     delete_review(db, review_id)
     return {"ok": True}
+
+# Admin routes for reviews
+@router.get("/admin/reviews/", response_model=list[ReviewSchema])
+def admin_read_all_reviews(
+    skip: int = 0,
+    limit: int = 100,
+    website_id: Optional[int] = None,
+    user_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    admin_user: DBUser = Depends(get_current_admin)
+):
+    """
+    ADMIN ONLY: Get all reviews with filtering options
+    """
+    reviews = get_all_reviews(db, skip=skip, limit=limit)
+    
+    # Filter by website if specified
+    if website_id is not None:
+        reviews = [r for r in reviews if r.website_id == website_id]
+    
+    # Filter by user if specified
+    if user_id is not None:
+        reviews = [r for r in reviews if r.user_id == user_id]
+    
+    return reviews
+
+@router.get(
+    "/admin/reviews/{review_id}",
+    response_model=ReviewSchema, 
+    responses={404: {"description": "Review not found"}}
+)
+def admin_read_review(
+    review_id: int,
+    db: Session = Depends(get_db),
+    admin_user: DBUser = Depends(get_current_admin)
+):
+    """
+    ADMIN ONLY: Get any review details
+    """
+    db_review = get_review(db, review_id)
+    if not db_review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return db_review
+
+@router.put(
+    "/admin/reviews/{review_id}",
+    response_model=ReviewSchema,
+    responses={404: {"description": "Review not found"}}
+)
+def admin_update_review(
+    review_id: int,
+    review_update: ReviewUpdate,
+    db: Session = Depends(get_db),
+    admin_user: DBUser = Depends(get_current_admin)
+):
+    """
+    ADMIN ONLY: Update any review
+    """
+    db_review = get_review(db, review_id)
+    if not db_review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return update_review(db, review_id, review_update)
+
+@router.delete(
+    "/admin/reviews/{review_id}",
+    responses={404: {"description": "Review not found"}}
+)
+def admin_delete_review(
+    review_id: int,
+    db: Session = Depends(get_db),
+    admin_user: DBUser = Depends(get_current_admin)
+):
+    """
+    ADMIN ONLY: Delete any review
+    """
+    db_review = get_review(db, review_id)
+    if not db_review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    delete_review(db, review_id)
+    return {"ok": True, "message": f"Review {review_id} successfully deleted"}

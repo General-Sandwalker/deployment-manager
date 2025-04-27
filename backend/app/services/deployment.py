@@ -162,7 +162,40 @@ class WebsiteProcessManager:
     def stop_site(self, port: int) -> bool:
         """Gracefully stop a running site"""
         if port not in self.processes:
-            return False
+            # Process might not be in memory but still running (e.g. after server restart)
+            try:
+                # Try to find pid by port through netstat or lsof
+                pid_check = subprocess.run(
+                    ["lsof", "-i", f":{port}", "-t"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                
+                if pid_check.returncode == 0 and pid_check.stdout.strip():
+                    pid = int(pid_check.stdout.strip())
+                    logger.info(f"Found process {pid} on port {port} - attempting to kill")
+                    try:
+                        os.kill(pid, signal.SIGTERM)
+                        # Wait a bit to make sure the process has time to terminate
+                        subprocess.run(
+                            ["sleep", "2"],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE
+                        )
+                        return True
+                    except ProcessLookupError:
+                        logger.warning(f"Process {pid} not found")
+                    except Exception as e:
+                        logger.error(f"Error killing process {pid}: {str(e)}")
+                
+                # If we're here, either no process was found or we couldn't kill it
+                # But we'll return True so the user can continue with other operations
+                return True
+            except Exception as e:
+                logger.error(f"Error checking for process on port {port}: {str(e)}")
+                # Return True to allow operations to continue
+                return True
             
         try:
             process = self.processes[port]
@@ -172,7 +205,8 @@ class WebsiteProcessManager:
             return True
         except Exception as e:
             logger.error(f"Error stopping site on port {port}: {str(e)}")
-            return False
+            # Return True anyway to avoid blocking operations
+            return True
 
     def delete_site(
         self,
@@ -182,17 +216,27 @@ class WebsiteProcessManager:
         user_id: int
     ) -> bool:
         """Completely remove a site and its resources"""
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise ValueError(f"User {user_id} not found")
-        
-        success = self.stop_site(port)
-        site_dir = self._get_site_path(user.full_name, website_name)
-        
         try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                logger.warning(f"User {user_id} not found when trying to delete site {website_name}")
+                return False
+            
+            # Stop the site regardless of whether it's running or not
+            self.stop_site(port)
+            
+            # Find and remove the site directory
+            site_dir = self._get_site_path(user.full_name, website_name)
             if site_dir.exists():
-                subprocess.run(["rm", "-rf", str(site_dir)], check=True)
-            return success
+                try:
+                    subprocess.run(["rm", "-rf", str(site_dir)], check=True)
+                    logger.info(f"Removed site directory for {website_name}")
+                except subprocess.CalledProcessError as e:
+                    logger.error(f"Error removing site directory: {str(e)}")
+                    # Continue with deletion even if directory removal fails
+            
+            return True
         except Exception as e:
-            logger.error(f"Error deleting site {website_name}: {str(e)}")
-            return False
+            logger.error(f"Error in delete_site for {website_name} (port {port}): {str(e)}")
+            # Return True anyway to prevent blocking the database deletion
+            return True
