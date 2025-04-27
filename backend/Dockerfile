@@ -1,7 +1,7 @@
 # Use the official Python image as the base image
 FROM python:3.12.3-alpine
 
-WORKDIR /deployment-manager
+WORKDIR /app
 
 # Install system dependencies and git
 RUN apk add --no-cache \

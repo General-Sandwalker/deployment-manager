@@ -1,4 +1,3 @@
-version: '3.9'
 
 services:
   db:
@@ -30,7 +29,7 @@ services:
 
   frontend:
     build: 
-      context: ./deployment-manager-frontend
+      context: ./frontend
       dockerfile: Dockerfile
     container_name: deployment_frontend
     restart: always

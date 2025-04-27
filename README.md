@@ -5,13 +5,14 @@ A full-stack web application for managing and deploying static websites from git
 ## Features
 
 - **User Features**
+
   - Create and deploy static websites from git repositories
   - Start, stop, and redeploy websites with a single click
   - Monitor website status (running, stopped, deploying, error)
   - View deployment logs
   - Filter and search websites
-
 - **Admin Features**
+
   - View and manage all user websites
   - Start, stop, and redeploy any website
   - Delete websites
@@ -36,12 +37,14 @@ The application consists of:
 ### Installation
 
 1. Clone the repository:
+
 ```bash
-git clone https://github.com/yourusername/deployment-manager.git
+git clone https://github.com/General-Sandwalker/deployment-manager.git
 cd deployment-manager
 ```
 
 2. Start the application using Docker Compose:
+
 ```bash
 docker-compose up -d
 ```
@@ -56,13 +59,11 @@ To manage admin users, follow these steps:
 
 1. Start the Docker containers using `docker-compose up`
 2. Run the following command to access the backend container:
+
 ```bash
-docker exec -it deployment_backend bash
+docker exec -it deployment_backend python3 /app/admin-manager.py
 ```
-3. Run the admin manager script:
-```bash
-python admin-manager.py
-```
+
 This will start the admin manager interface, allowing you to manage admin privileges and perform administrative tasks.
 
 ## Port Configuration
