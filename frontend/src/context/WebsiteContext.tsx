@@ -1,9 +1,10 @@
 // src/context/WebsiteContext.tsx
 'use client';
 
-import { createContext, useContext, ReactNode, useState, useCallback, useEffect } from 'react';
-import { Website, WebsiteCreate, WebsiteUpdate, WebsiteStatus } from '@/types';
-import { 
+import { createContext, useState, useContext, useCallback, ReactNode } from 'react';
+import { Website, WebsiteStatus, WebsiteCreate, WebsiteUpdate } from '@/types';
+import { useAuth } from './AuthContext';
+import {
   createWebsite as createWebsiteService,
   getUserWebsites,
   getWebsite as getWebsiteService,
@@ -12,119 +13,117 @@ import {
   startWebsite as startWebsiteService,
   stopWebsite as stopWebsiteService,
   redeployWebsite as redeployWebsiteService,
+  adminGetAllWebsites,
+  adminUpdateWebsite as adminUpdateWebsiteService,
   adminDeleteWebsite as adminDeleteWebsiteService,
-  getAllWebsites
+  adminStartWebsite as adminStartWebsiteService,
+  adminStopWebsite as adminStopWebsiteService,
 } from '@/services/websites';
-import { useAuth } from './AuthContext';
 
-interface WebsiteContextType {
+interface WebsiteContextProps {
   websites: Website[];
   currentWebsite: Website | null;
   isLoading: boolean;
   error: string | null;
-  isAdmin: boolean;
-  pagination: {
-    skip: number;
-    limit: number;
-    total: number;
-  };
-  createWebsite: (data: WebsiteCreate) => Promise<Website>;
   fetchWebsites: () => Promise<void>;
   fetchAllWebsites: () => Promise<void>;
   getWebsite: (id: number) => Promise<Website>;
-  updateWebsite: (id: number, data: WebsiteUpdate) => Promise<Website>;
+  createWebsite: (name: string, gitRepo: string) => Promise<Website>;
+  updateWebsite: (id: number, updates: WebsiteUpdate) => Promise<Website>;
   deleteWebsite: (id: number) => Promise<void>;
-  adminDeleteWebsite: (id: number) => Promise<void>;
   startWebsite: (id: number) => Promise<void>;
   stopWebsite: (id: number) => Promise<void>;
   redeployWebsite: (id: number) => Promise<void>;
-  setPagination: (skip: number, limit: number) => void;
+  setCurrentWebsite: (website: Website | null) => void;
   updateWebsiteStatus: (id: number, status: WebsiteStatus) => void;
+  adminUpdateWebsite: (id: number, updates: WebsiteUpdate) => Promise<Website>;
+  adminDeleteWebsite: (id: number) => Promise<void>;
+  adminStartWebsite: (id: number) => Promise<void>;
+  adminStopWebsite: (id: number) => Promise<void>;
 }
 
-const WebsiteContext = createContext<WebsiteContextType | undefined>(undefined);
+const WebsiteContext = createContext<WebsiteContextProps>({
+  websites: [],
+  currentWebsite: null,
+  isLoading: false,
+  error: null,
+  fetchWebsites: async () => {},
+  fetchAllWebsites: async () => {},
+  getWebsite: async () => ({ id: 0 } as Website),
+  createWebsite: async () => ({ id: 0 } as Website),
+  updateWebsite: async () => ({ id: 0 } as Website),
+  deleteWebsite: async () => {},
+  startWebsite: async () => {},
+  stopWebsite: async () => {},
+  redeployWebsite: async () => {},
+  setCurrentWebsite: () => {},
+  updateWebsiteStatus: () => {},
+  adminUpdateWebsite: async () => ({ id: 0 } as Website),
+  adminDeleteWebsite: async () => {},
+  adminStartWebsite: async () => {},
+  adminStopWebsite: async () => {},
+});
+
+export const useWebsites = () => useContext(WebsiteContext);
 
 export const WebsiteProvider = ({ children }: { children: ReactNode }) => {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [currentWebsite, setCurrentWebsite] = useState<Website | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pagination, setPaginationState] = useState({
-    skip: 0,
-    limit: 10,
-    total: 0
-  });
-  
-  const { token, user } = useAuth();
-  const isAdmin = user?.is_admin || false;
-
-  const setPagination = useCallback((skip: number, limit: number) => {
-    setPaginationState(prev => ({ ...prev, skip, limit }));
-  }, []);
-
-  const updateWebsiteStatus = useCallback((id: number, status: WebsiteStatus) => {
-    setWebsites(prev => prev.map(w => 
-      w.id === id ? { ...w, status } : w
-    ));
-    if (currentWebsite?.id === id) {
-      setCurrentWebsite(prev => prev ? { ...prev, status } : null);
-    }
-  }, [currentWebsite]);
+  const { token, isAdmin } = useAuth();
 
   const fetchWebsites = useCallback(async () => {
     if (!token) return;
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getUserWebsites(token, pagination.skip, pagination.limit);
+      const data = await getUserWebsites(token);
       setWebsites(data);
-      setPaginationState(prev => ({ ...prev, total: data.length }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch websites');
     } finally {
       setIsLoading(false);
     }
-  }, [token, pagination.skip, pagination.limit]);
+  }, [token]);
 
   const fetchAllWebsites = useCallback(async () => {
     if (!token || !isAdmin) return;
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getAllWebsites(token, pagination.skip, pagination.limit);
+      const data = await adminGetAllWebsites(token);
       setWebsites(data);
-      setPaginationState(prev => ({ ...prev, total: data.length }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch all websites');
     } finally {
       setIsLoading(false);
     }
-  }, [token, isAdmin, pagination.skip, pagination.limit]);
+  }, [token, isAdmin]);
 
   const getWebsite = useCallback(async (id: number) => {
     if (!token) throw new Error('Not authenticated');
     setIsLoading(true);
     setError(null);
     try {
-      const website = await getWebsiteService(id, token);
-      setCurrentWebsite(website);
-      return website;
+      return await getWebsiteService(id, token);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch website');
+      setError(err instanceof Error ? err.message : 'Failed to get website');
       throw err;
     } finally {
       setIsLoading(false);
     }
   }, [token]);
 
-  const createWebsite = useCallback(async (data: WebsiteCreate) => {
+  const createWebsite = useCallback(async (name: string, gitRepo: string) => {
     if (!token) throw new Error('Not authenticated');
     setIsLoading(true);
     setError(null);
     try {
-      const newWebsite = await createWebsiteService(data, token);
-      setWebsites(prev => [...prev, newWebsite]);
-      return newWebsite;
+      const websiteData: WebsiteCreate = { name, git_repo: gitRepo };
+      const website = await createWebsiteService(websiteData, token);
+      setWebsites(prev => [...prev, website]);
+      return website;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create website');
       throw err;
@@ -133,17 +132,17 @@ export const WebsiteProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [token]);
 
-  const updateWebsite = useCallback(async (id: number, data: WebsiteUpdate) => {
+  const updateWebsite = useCallback(async (id: number, updates: WebsiteUpdate) => {
     if (!token) throw new Error('Not authenticated');
     setIsLoading(true);
     setError(null);
     try {
-      const updatedWebsite = await updateWebsiteService(id, data, token);
-      setWebsites(prev => prev.map(w => w.id === id ? updatedWebsite : w));
+      const website = await updateWebsiteService(id, updates, token);
+      setWebsites(prev => prev.map(w => w.id === id ? website : w));
       if (currentWebsite?.id === id) {
-        setCurrentWebsite(updatedWebsite);
+        setCurrentWebsite(website);
       }
-      return updatedWebsite;
+      return website;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update website');
       throw err;
@@ -151,6 +150,26 @@ export const WebsiteProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     }
   }, [token, currentWebsite]);
+
+  const updateWebsiteStatus = useCallback((id: number, status: WebsiteStatus) => {
+    setWebsites(prev => {
+      return prev.map(website => {
+        if (website.id === id) {
+          return { ...website, status };
+        }
+        return website;
+      });
+    });
+    
+    if (currentWebsite?.id === id) {
+      setCurrentWebsite(prev => {
+        if (prev) {
+          return { ...prev, status };
+        }
+        return prev;
+      });
+    }
+  }, [currentWebsite]);
 
   const deleteWebsite = useCallback(async (id: number) => {
     if (!token) throw new Error('Not authenticated');
@@ -215,6 +234,25 @@ export const WebsiteProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [token, updateWebsiteStatus]);
 
+  const adminUpdateWebsite = useCallback(async (id: number, updates: WebsiteUpdate) => {
+    if (!token || !isAdmin) throw new Error('Not authorized');
+    setIsLoading(true);
+    setError(null);
+    try {
+      const website = await adminUpdateWebsiteService(id, updates, token);
+      setWebsites(prev => prev.map(w => w.id === id ? website : w));
+      if (currentWebsite?.id === id) {
+        setCurrentWebsite(website);
+      }
+      return website;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update website');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token, isAdmin, currentWebsite]);
+
   const adminDeleteWebsite = useCallback(async (id: number) => {
     if (!token || !isAdmin) throw new Error('Not authorized');
     setIsLoading(true);
@@ -233,52 +271,61 @@ export const WebsiteProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [token, isAdmin, currentWebsite]);
 
-  // WebSocket for real-time updates
-  useEffect(() => {
-    if (!token) return;
-    
-    const ws = new WebSocket(`wss://your-api/websites/updates?token=${token}`);
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'STATUS_UPDATE') {
-        updateWebsiteStatus(data.websiteId, data.status);
-      }
-    };
+  const adminStartWebsite = useCallback(async (id: number) => {
+    if (!token || !isAdmin) throw new Error('Not authorized');
+    setIsLoading(true);
+    setError(null);
+    try {
+      const website = await adminStartWebsiteService(id, token);
+      updateWebsiteStatus(id, website.status);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start website');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token, isAdmin, updateWebsiteStatus]);
 
-    return () => ws.close();
-  }, [token, updateWebsiteStatus]);
+  const adminStopWebsite = useCallback(async (id: number) => {
+    if (!token || !isAdmin) throw new Error('Not authorized');
+    setIsLoading(true);
+    setError(null);
+    try {
+      const website = await adminStopWebsiteService(id, token);
+      updateWebsiteStatus(id, website.status);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to stop website');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token, isAdmin, updateWebsiteStatus]);
 
   return (
-    <WebsiteContext.Provider value={{
-      websites,
-      currentWebsite,
-      isLoading,
-      error,
-      isAdmin,
-      pagination,
-      createWebsite,
-      fetchWebsites,
-      fetchAllWebsites,
-      getWebsite,
-      updateWebsite,
-      deleteWebsite,
-      adminDeleteWebsite,
-      startWebsite,
-      stopWebsite,
-      redeployWebsite,
-      setPagination,
-      updateWebsiteStatus
-    }}>
+    <WebsiteContext.Provider
+      value={{
+        websites,
+        currentWebsite,
+        isLoading,
+        error,
+        fetchWebsites,
+        fetchAllWebsites,
+        getWebsite,
+        createWebsite,
+        updateWebsite,
+        deleteWebsite,
+        startWebsite,
+        stopWebsite,
+        redeployWebsite,
+        setCurrentWebsite,
+        updateWebsiteStatus,
+        adminUpdateWebsite,
+        adminDeleteWebsite,
+        adminStartWebsite,
+        adminStopWebsite,
+      }}
+    >
       {children}
     </WebsiteContext.Provider>
   );
-};
-
-export const useWebsites = () => {
-  const context = useContext(WebsiteContext);
-  if (context === undefined) {
-    throw new Error('useWebsites must be used within a WebsiteProvider');
-  }
-  return context;
 };

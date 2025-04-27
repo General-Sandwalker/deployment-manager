@@ -2,17 +2,9 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { User } from '@/types/user';
+import { User } from '@/types';
+import { AuthContextType } from '@/types/auth';
 import { login as loginService, getCurrentUser, logout as logoutService } from '@/services/auth';
-
-interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  isLoading: boolean;
-  error: string | null;
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -21,6 +13,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Compute isAdmin based on user.is_admin property
+  const isAdmin = user?.is_admin || false;
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -64,6 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await logoutService();
       setUser(null);
       setToken(null);
+      localStorage.removeItem('token');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Logout failed');
     } finally {
@@ -72,7 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading, error }}>
+    <AuthContext.Provider value={{ user, token, isAdmin, login, logout, isLoading, error }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,9 +1,11 @@
 'use client';
 import { useState, ReactNode } from 'react';
 import { useWebsites } from '@/context/WebsiteContext';
+import { WebsiteCreate } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/lable';
+import { useToast } from '@/components/ui/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -18,18 +20,30 @@ interface CreateWebsiteModalProps {
 
 export default function CreateWebsiteModal({ children }: CreateWebsiteModalProps) {
   const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<WebsiteCreate>({
     name: '',
     git_repo: '',
-    domain: '',
   });
   const { createWebsite, isLoading } = useWebsites();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createWebsite(formData);
-    setOpen(false);
-    setFormData({ name: '', git_repo: '', domain: '' });
+    try {
+      await createWebsite(formData.name, formData.git_repo);
+      toast({
+        title: "Success",
+        description: "Website created successfully",
+      });
+      setOpen(false);
+      setFormData({ name: '', git_repo: '' });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create website",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -76,19 +90,6 @@ export default function CreateWebsiteModal({ children }: CreateWebsiteModalProps
               className="bg-[var(--cosmic-light)] border-[var(--cosmic-accent)] mt-1 text-[var(--text-primary)]"
               placeholder="https://github.com/user/repo"
               required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="domain" className="text-[var(--cosmic-highlight)]">
-              Custom Domain (optional)
-            </Label>
-            <Input
-              id="domain"
-              value={formData.domain}
-              onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-              className="bg-[var(--cosmic-light)] border-[var(--cosmic-accent)] mt-1 text-[var(--text-primary)]"
-              placeholder="example.com"
             />
           </div>
 

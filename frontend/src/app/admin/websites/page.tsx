@@ -7,18 +7,29 @@ import WebsiteCard from '@/components/shared/WebsiteCard';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Website, WebsiteStatus } from '@/types';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-export default function WebsitesAdminPage() {
-  const { websites, isLoading, fetchAllWebsites, adminDeleteWebsite } = useWebsites();
+export default function AdminWebsitesPage() {
+  const { websites, isLoading, fetchAllWebsites } = useWebsites();
   const [filteredWebsites, setFilteredWebsites] = useState<Website[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [showExpired, setShowExpired] = useState(false);
 
   useEffect(() => {
-    fetchAllWebsites();
+    const loadWebsites = async () => {
+      await fetchAllWebsites();
+    };
+    loadWebsites();
   }, [fetchAllWebsites]);
 
   useEffect(() => {
@@ -41,11 +52,16 @@ export default function WebsitesAdminPage() {
         );
       }
       
+      // Apply expired filter
+      if (!showExpired) {
+        filtered = filtered.filter(website => !website.expires_at || new Date(website.expires_at) > new Date());
+      }
+      
       setFilteredWebsites(filtered);
     } else {
       setFilteredWebsites([]);
     }
-  }, [websites, searchTerm, statusFilter]);
+  }, [websites, searchTerm, statusFilter, showExpired]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -67,10 +83,15 @@ export default function WebsitesAdminPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">All Websites</h1>
-        <Button className="bg-[var(--cosmic-highlight)] hover:bg-[var(--cosmic-highlight-dark)]">
-          <Plus className="mr-2 h-4 w-4" />
-          New Website
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowExpired(!showExpired)}
+            className={`${showExpired ? 'bg-cosmic-highlight text-white' : 'border-cosmic-accent'}`}
+          >
+            {showExpired ? 'Hide Expired' : 'Show Expired'}
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -85,40 +106,33 @@ export default function WebsitesAdminPage() {
           />
         </div>
         
-        <div className="flex flex-wrap gap-2">
-          <Badge 
-            onClick={() => handleStatusFilter(WebsiteStatus.RUNNING)}
-            className={`cursor-pointer ${statusFilter === WebsiteStatus.RUNNING ? 'bg-green-500' : 'bg-[var(--cosmic-light)] hover:bg-green-500/30'}`}
-          >
-            Running
-          </Badge>
-          <Badge 
-            onClick={() => handleStatusFilter(WebsiteStatus.STOPPED)}
-            className={`cursor-pointer ${statusFilter === WebsiteStatus.STOPPED ? 'bg-red-500' : 'bg-[var(--cosmic-light)] hover:bg-red-500/30'}`}
-          >
-            Stopped
-          </Badge>
-          <Badge 
-            onClick={() => handleStatusFilter(WebsiteStatus.DEPLOYING)}
-            className={`cursor-pointer ${statusFilter === WebsiteStatus.DEPLOYING ? 'bg-yellow-500' : 'bg-[var(--cosmic-light)] hover:bg-yellow-500/30'}`}
-          >
-            Deploying
-          </Badge>
-          <Badge 
-            onClick={() => handleStatusFilter(WebsiteStatus.ERROR)}
-            className={`cursor-pointer ${statusFilter === WebsiteStatus.ERROR ? 'bg-red-500' : 'bg-[var(--cosmic-light)] hover:bg-red-500/30'}`}
-          >
-            Error
-          </Badge>
-          {statusFilter && (
-            <Badge 
-              onClick={() => setStatusFilter(null)}
-              className="cursor-pointer bg-[var(--cosmic-accent)] hover:bg-[var(--cosmic-accent)]/80"
-            >
-              Clear Filters
-            </Badge>
-          )}
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="border-[var(--cosmic-accent)] text-[var(--text-primary)]">
+              <Filter className="mr-2 h-4 w-4" />
+              Status: {statusFilter || 'All'}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-[var(--cosmic-blue)] border-[var(--cosmic-accent)]">
+            <DropdownMenuRadioGroup value={statusFilter || ''} onValueChange={(value) => setStatusFilter(value || null)}>
+              <DropdownMenuRadioItem value="" className="text-[var(--text-primary)] focus:bg-[var(--cosmic-light)]">
+                All Statuses
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value={WebsiteStatus.RUNNING} className="text-[var(--text-primary)] focus:bg-[var(--cosmic-light)]">
+                Running
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value={WebsiteStatus.STOPPED} className="text-[var(--text-primary)] focus:bg-[var(--cosmic-light)]">
+                Stopped
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value={WebsiteStatus.DEPLOYING} className="text-[var(--text-primary)] focus:bg-[var(--cosmic-light)]">
+                Deploying
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value={WebsiteStatus.ERROR} className="text-[var(--text-primary)] focus:bg-[var(--cosmic-light)]">
+                Error
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Results count */}

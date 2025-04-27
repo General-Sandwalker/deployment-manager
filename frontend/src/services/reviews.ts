@@ -1,48 +1,161 @@
 // src/services/reviews.ts
-import { apiGet, apiPost, apiPut, apiDelete } from "./api";
-import { Review, ReviewCreate, ReviewUpdate } from "@/types";
+import { Review, ReviewCreate, ReviewUpdate } from '@/types';
 
-export const createReview = async (
-  review: ReviewCreate,
-  token: string
-): Promise<Review> => {
-  return apiPost<Review>('/reviews/', review, token);
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+// Public routes
+export const getAllReviews = async (): Promise<Review[]> => {
+  const response = await fetch(`${API_URL}/reviews`);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch reviews');
+  }
+
+  return response.json();
 };
 
-export const getUserReviews = async (
-  token: string,
-  skip: number = 0,
-  limit: number = 100
-): Promise<Review[]> => {
-  return apiGet<Review[]>(`/reviews/?skip=${skip}&limit=${limit}`, token);
+// User routes
+export const getUserReviews = async (token: string): Promise<Review[]> => {
+  const response = await fetch(`${API_URL}/reviews/user`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch user reviews');
+  }
+
+  return response.json();
 };
 
-export const getAllReviews = async (
-  token: string,
-  skip: number = 0,
-  limit: number = 100
-): Promise<Review[]> => {
-  return apiGet<Review[]>(`/reviews/all/?skip=${skip}&limit=${limit}`, token);
+export const getReview = async (id: number, token: string): Promise<Review> => {
+  const response = await fetch(`${API_URL}/reviews/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch review');
+  }
+
+  return response.json();
 };
 
-export const getReview = async (
-  reviewId: number,
-  token: string
-): Promise<Review> => {
-  return apiGet<Review>(`/reviews/${reviewId}`, token);
+export const createReview = async (review: ReviewCreate, token: string): Promise<Review> => {
+  const response = await fetch(`${API_URL}/reviews`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(review),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Failed to create review');
+  }
+
+  return response.json();
 };
 
 export const updateReview = async (
-  reviewId: number,
-  updates: ReviewUpdate,
+  id: number,
+  review: ReviewUpdate,
   token: string
 ): Promise<Review> => {
-  return apiPut<Review>(`/reviews/${reviewId}`, updates, token);
+  const response = await fetch(`${API_URL}/reviews/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(review),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update review');
+  }
+
+  return response.json();
 };
 
-export const deleteReview = async (
-  reviewId: number,
+export const deleteReview = async (id: number, token: string): Promise<void> => {
+  const response = await fetch(`${API_URL}/reviews/${id}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to delete review');
+  }
+};
+
+// Admin routes
+export const adminGetAllReviews = async (
+  token: string, 
+  skip: number = 0, 
+  limit: number = 100,
+  websiteId?: number,
+  userId?: number
+): Promise<Review[]> => {
+  let url = `${API_URL}/admin/reviews?skip=${skip}&limit=${limit}`;
+  
+  if (websiteId) {
+    url += `&website_id=${websiteId}`;
+  }
+  
+  if (userId) {
+    url += `&user_id=${userId}`;
+  }
+  
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch all reviews');
+  }
+
+  return response.json();
+};
+
+export const adminUpdateReview = async (
+  id: number,
+  review: ReviewUpdate,
   token: string
-): Promise<void> => {
-  return apiDelete(`/reviews/${reviewId}`, token);
+): Promise<Review> => {
+  const response = await fetch(`${API_URL}/admin/reviews/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(review),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update review as admin');
+  }
+
+  return response.json();
+};
+
+export const adminDeleteReview = async (id: number, token: string): Promise<void> => {
+  const response = await fetch(`${API_URL}/admin/reviews/${id}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to delete review as admin');
+  }
 };

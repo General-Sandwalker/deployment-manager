@@ -1,14 +1,15 @@
 // src/types/review.ts
-import { User } from "./user";
-
 export interface Review {
   id: number;
   content: string;
   rating: number;
   user_id: number;
+  website_id: number;
   created_at: string;
-  user?: User;
-  website_id?: number;
+  updated_at?: string;
+  user_email?: string;
+  user_full_name?: string;
+  website_name?: string;
 }
 
 export interface ReviewCreate {

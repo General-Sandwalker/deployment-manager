@@ -11,6 +11,7 @@ import { Rocket, Globe, Star, Plus } from 'lucide-react';
 import Link from 'next/link';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import { WebsiteStatus } from '@/types';
+import CreateWebsiteModal from '@/components/shared/CreateWebsiteModal';
 
 export default function DashboardPage() {
   const { websites, isLoading: websitesLoading } = useWebsites();
@@ -66,12 +67,12 @@ export default function DashboardPage() {
             >
               View All
             </Link>
-            <Button asChild className="bg-[var(--cosmic-highlight)] hover:bg-[var(--cosmic-highlight-dark)]">
-              <Link href="/dashboard/websites/new" className="flex items-center">
+            <CreateWebsiteModal>
+              <Button className="bg-[var(--cosmic-highlight)] hover:bg-[var(--cosmic-highlight-dark)]">
                 <Plus className="mr-2 h-4 w-4" />
                 New Website
-              </Link>
-            </Button>
+              </Button>
+            </CreateWebsiteModal>
           </div>
         </div>
         {recentWebsites.length > 0 ? (
@@ -83,12 +84,12 @@ export default function DashboardPage() {
         ) : (
           <div className="text-center py-8 text-[var(--text-secondary)]">
             <p>No websites yet. Create your first website to get started!</p>
-            <Button asChild className="mt-4 bg-[var(--cosmic-highlight)] hover:bg-[var(--cosmic-highlight-dark)]">
-              <Link href="/dashboard/websites/new" className="flex items-center">
+            <CreateWebsiteModal>
+              <Button className="mt-4 bg-[var(--cosmic-highlight)] hover:bg-[var(--cosmic-highlight-dark)]">
                 <Plus className="mr-2 h-4 w-4" />
                 New Website
-              </Link>
-            </Button>
+              </Button>
+            </CreateWebsiteModal>
           </div>
         )}
       </div>
