@@ -1,9 +1,10 @@
 'use client';
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Globe, Star, Users, Settings } from 'lucide-react';
 
-export default function AdminSidebar() {
+export const AdminSidebar = () => {
   const pathname = usePathname();
   
   const links = [

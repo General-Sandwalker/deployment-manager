@@ -1,3 +1,5 @@
+'use client';
+
 import { ArrowUp, ArrowDown, ArrowRight } from 'lucide-react';
 
 interface AdminStatsCardProps {
