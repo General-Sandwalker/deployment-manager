@@ -61,33 +61,29 @@ The backend component of the Deployment Manager application built with FastAPI, 
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.12+
 - PostgreSQL
 
 ### Local Development Setup
 
 1. Create a virtual environment:
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 2. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 3. Set up environment variables (create a `.env` file)
-
 4. Run the application:
+
 ```bash
 uvicorn app.main:app --reload
-```
-
-### Running Tests
-
-```bash
-pytest
 ```
 
 ## Deployment

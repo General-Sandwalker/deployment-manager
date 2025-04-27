@@ -61,7 +61,7 @@ To manage admin users, follow these steps:
 2. Run the following command to access the backend container:
 
 ```bash
-docker exec -it deployment_backend python3 /app/admin-manager.py
+docker exec -it deployment_backend python3 /deployment-manager/admin-manager.py
 ```
 
 This will start the admin manager interface, allowing you to manage admin privileges and perform administrative tasks.
