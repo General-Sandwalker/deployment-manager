@@ -10,6 +10,11 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.shortcuts import confirm
 from prompt_toolkit.styles import Style
+from prompt_toolkit.formatted_text import HTML
+from colorama import Fore, Back, Style as ColoramaStyle, init
+
+# Initialize colorama
+init(autoreset=True)
 
 # Load environment variables
 load_dotenv()
@@ -26,7 +31,7 @@ class DatabaseManager:
         try:
             return psycopg2.connect(self._get_db_connection_string())
         except psycopg2.Error as e:
-            print(f"Database connection error: {str(e)}")
+            print(f"{Fore.RED}Database connection error: {str(e)}{Fore.RESET}")
             sys.exit(1)
 
     @staticmethod
@@ -76,7 +81,7 @@ class AdminManager(DatabaseManager):
                 """)
                 return cursor.fetchall()
         except psycopg2.Error as e:
-            print(f"Database error: {str(e)}")
+            print(f"{Fore.RED}Database error: {str(e)}{Fore.RESET}")
             return []
 
     def toggle_admin(self, user_id: int) -> bool:
@@ -90,13 +95,13 @@ class AdminManager(DatabaseManager):
                     RETURNING id, email, is_admin
                 """, (user_id,))
                 if result := cursor.fetchone():
-                    status = "ADMIN" if result['is_admin'] else "NORMAL"
-                    print(f"\nUser {result['email']} status set to {status}")
+                    status = f"{Fore.GREEN}ADMIN{Fore.RESET}" if result['is_admin'] else f"{Fore.YELLOW}NORMAL{Fore.RESET}"
+                    print(f"\nUser {Fore.CYAN}{result['email']}{Fore.RESET} status set to {status}")
                     return True
-                print(f"\nUser with ID {user_id} not found")
+                print(f"\n{Fore.RED}User with ID {user_id} not found{Fore.RESET}")
                 return False
         except psycopg2.Error as e:
-            print(f"\nDatabase error: {str(e)}")
+            print(f"\n{Fore.RED}Database error: {str(e)}{Fore.RESET}")
             return False
     
     def delete_user(self, user_id: int) -> bool:
@@ -107,25 +112,25 @@ class AdminManager(DatabaseManager):
                 cursor.execute("SELECT email FROM users WHERE id = %s", (user_id,))
                 user = cursor.fetchone()
                 if not user:
-                    print(f"\nUser with ID {user_id} not found")
+                    print(f"\n{Fore.RED}User with ID {user_id} not found{Fore.RESET}")
                     return False
                 
                 # Confirm deletion
-                if not confirm(f"Are you sure you want to delete user {user['email']}? This will also delete all their websites and reviews!"):
-                    print("\nDeletion cancelled")
+                if not confirm(f"Are you sure you want to delete user {Fore.CYAN}{user['email']}{Fore.RESET}? This will also delete all their websites and reviews!"):
+                    print(f"\n{Fore.YELLOW}Deletion cancelled{Fore.RESET}")
                     return False
                 
                 # First delete related data
-                print("\nDeleting user's websites and reviews...")
+                print(f"\n{Fore.YELLOW}Deleting user's websites and reviews...{Fore.RESET}")
                 cursor.execute("DELETE FROM websites WHERE user_id = %s", (user_id,))
                 cursor.execute("DELETE FROM reviews WHERE user_id = %s", (user_id,))
                 
                 # Then delete the user
                 cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
-                print(f"\nUser {user['email']} deleted successfully")
+                print(f"\n{Fore.GREEN}User {user['email']} deleted successfully{Fore.RESET}")
                 return True
         except psycopg2.Error as e:
-            print(f"\nDatabase error: {str(e)}")
+            print(f"\n{Fore.RED}Database error: {str(e)}{Fore.RESET}")
             return False
     
     def list_websites(self) -> List[Dict]:
@@ -141,7 +146,7 @@ class AdminManager(DatabaseManager):
                 """)
                 return cursor.fetchall()
         except psycopg2.Error as e:
-            print(f"Database error: {str(e)}")
+            print(f"{Fore.RED}Database error: {str(e)}{Fore.RESET}")
             return []
     
     def delete_website(self, website_id: int) -> bool:
@@ -157,17 +162,17 @@ class AdminManager(DatabaseManager):
                 """, (website_id,))
                 website = cursor.fetchone()
                 if not website:
-                    print(f"\nWebsite with ID {website_id} not found")
+                    print(f"\n{Fore.RED}Website with ID {website_id} not found{Fore.RESET}")
                     return False
                 
                 # Confirm deletion
-                if not confirm(f"Are you sure you want to delete website '{website['name']}' owned by {website['email']}?"):
-                    print("\nDeletion cancelled")
+                if not confirm(f"Are you sure you want to delete website '{Fore.CYAN}{website['name']}{Fore.RESET}' owned by {Fore.CYAN}{website['email']}{Fore.RESET}?"):
+                    print(f"\n{Fore.YELLOW}Deletion cancelled{Fore.RESET}")
                     return False
                 
                 # Try to stop the website process if running
                 port = website['port']
-                print(f"\nStopping website on port {port}...")
+                print(f"\n{Fore.YELLOW}Stopping website on port {port}...{Fore.RESET}")
                 try:
                     import subprocess
                     import signal
@@ -177,10 +182,10 @@ class AdminManager(DatabaseManager):
                 
                 # Delete the website
                 cursor.execute("DELETE FROM websites WHERE id = %s", (website_id,))
-                print(f"\nWebsite '{website['name']}' deleted successfully")
+                print(f"\n{Fore.GREEN}Website '{website['name']}' deleted successfully{Fore.RESET}")
                 return True
         except psycopg2.Error as e:
-            print(f"\nDatabase error: {str(e)}")
+            print(f"\n{Fore.RED}Database error: {str(e)}{Fore.RESET}")
             return False
     
     def list_reviews(self) -> List[Dict]:
@@ -197,7 +202,7 @@ class AdminManager(DatabaseManager):
                 """)
                 return cursor.fetchall()
         except psycopg2.Error as e:
-            print(f"Database error: {str(e)}")
+            print(f"{Fore.RED}Database error: {str(e)}{Fore.RESET}")
             return []
     
     def delete_review(self, review_id: int) -> bool:
@@ -214,96 +219,92 @@ class AdminManager(DatabaseManager):
                 """, (review_id,))
                 review = cursor.fetchone()
                 if not review:
-                    print(f"\nReview with ID {review_id} not found")
+                    print(f"\n{Fore.RED}Review with ID {review_id} not found{Fore.RESET}")
                     return False
                 
                 # Confirm deletion
-                if not confirm(f"Are you sure you want to delete review by {review['email']} for {review['name']}?"):
-                    print("\nDeletion cancelled")
+                if not confirm(f"Are you sure you want to delete review by {Fore.CYAN}{review['email']}{Fore.RESET} for {Fore.CYAN}{review['name']}{Fore.RESET}?"):
+                    print(f"\n{Fore.YELLOW}Deletion cancelled{Fore.RESET}")
                     return False
                 
                 # Delete the review
                 cursor.execute("DELETE FROM reviews WHERE id = %s", (review_id,))
-                print(f"\nReview deleted successfully")
+                print(f"\n{Fore.GREEN}Review deleted successfully{Fore.RESET}")
                 return True
         except psycopg2.Error as e:
-            print(f"\nDatabase error: {str(e)}")
+            print(f"\n{Fore.RED}Database error: {str(e)}{Fore.RESET}")
             return False
 
     def print_users(self, users: List[Dict]):
         """Display users in a formatted table"""
         if not users:
-            print("No users found")
+            print(f"{Fore.YELLOW}No users found{Fore.RESET}")
             return
         
-        print("\n{:<5} {:<30} {:<25} {:<10} {:<10} {:<20} {:<20}".format(
-            "ID", "Email", "Name", "Admin", "Active", "Created At", "Plan Expires"
-        ))
-        print("-" * 120)
-        for user in users:
+        print(f"\n{Fore.BLUE}{Back.WHITE}{ColoramaStyle.BRIGHT}{'ID':<5} {'Email':<30} {'Name':<25} {'Admin':<10} {'Active':<10} {'Created At':<20} {'Plan Expires':<20}{ColoramaStyle.RESET_ALL}")
+        print(f"{Fore.BLUE}{'-' * 120}{Fore.RESET}")
+        for i, user in enumerate(users):
             expires_at = user['plan_expires_at'].strftime('%Y-%m-%d') if user['plan_expires_at'] else "Never"
-            print("{:<5} {:<30} {:<25} {:<10} {:<10} {:<20} {:<20}".format(
-                user['id'],
-                user['email'],
-                user.get('full_name', ''),
-                "Yes" if user['is_admin'] else "No",
-                "Yes" if user['is_active'] else "No",
-                user['created_at'].strftime('%Y-%m-%d %H:%M'),
-                expires_at
-            ))
+            bg_color = Fore.BLACK + Back.WHITE if i % 2 == 0 else ""
+            admin_color = Fore.GREEN if user['is_admin'] else Fore.YELLOW
+            active_color = Fore.GREEN if user['is_active'] else Fore.RED
+            
+            print(f"{bg_color}{user['id']:<5} {Fore.CYAN}{user['email']:<30}{Fore.RESET}{bg_color} "
+                  f"{user.get('full_name', ''):<25} "
+                  f"{admin_color}{'Yes' if user['is_admin'] else 'No':<10}{Fore.RESET}{bg_color} "
+                  f"{active_color}{'Yes' if user['is_active'] else 'No':<10}{Fore.RESET}{bg_color} "
+                  f"{user['created_at'].strftime('%Y-%m-%d %H:%M'):<20} "
+                  f"{expires_at:<20}{Fore.RESET}")
         print()
     
     def print_websites(self, websites: List[Dict]):
         """Display websites in a formatted table"""
         if not websites:
-            print("No websites found")
+            print(f"{Fore.YELLOW}No websites found{Fore.RESET}")
             return
         
-        print("\n{:<5} {:<25} {:<30} {:<8} {:<12} {:<25} {:<20}".format(
-            "ID", "Name", "Git Repo", "Port", "Status", "Owner", "Created At"
-        ))
-        print("-" * 130)
-        for website in websites:
-            print("{:<5} {:<25} {:<30} {:<8} {:<12} {:<25} {:<20}".format(
-                website['id'],
-                website['name'][:25],
-                website['git_repo'][:30],
-                website['port'],
-                website['status'],
-                website['owner_email'][:25],
-                website['created_at'].strftime('%Y-%m-%d %H:%M')
-            ))
+        print(f"\n{Fore.BLUE}{Back.WHITE}{ColoramaStyle.BRIGHT}{'ID':<5} {'Name':<25} {'Git Repo':<30} {'Port':<8} {'Status':<12} {'Owner':<25} {'Created At':<20}{ColoramaStyle.RESET_ALL}")
+        print(f"{Fore.BLUE}{'-' * 130}{Fore.RESET}")
+        for i, website in enumerate(websites):
+            bg_color = Fore.BLACK + Back.WHITE if i % 2 == 0 else ""
+            status_color = Fore.GREEN if website['status'] == 'running' else (Fore.RED if website['status'] == 'error' else Fore.YELLOW)
+            
+            print(f"{bg_color}{website['id']:<5} {Fore.CYAN}{website['name'][:25]:<25}{Fore.RESET}{bg_color} "
+                  f"{website['git_repo'][:30]:<30} "
+                  f"{website['port']:<8} "
+                  f"{status_color}{website['status']:<12}{Fore.RESET}{bg_color} "
+                  f"{website['owner_email'][:25]:<25} "
+                  f"{website['created_at'].strftime('%Y-%m-%d %H:%M'):<20}{Fore.RESET}")
         print()
     
     def print_reviews(self, reviews: List[Dict]):
         """Display reviews in a formatted table"""
         if not reviews:
-            print("No reviews found")
+            print(f"{Fore.YELLOW}No reviews found{Fore.RESET}")
             return
         
-        print("\n{:<5} {:<6} {:<30} {:<25} {:<25} {:<20}".format(
-            "ID", "Rating", "Comment", "Website", "Reviewer", "Created At"
-        ))
-        print("-" * 120)
-        for review in reviews:
-            print("{:<5} {:<6} {:<30} {:<25} {:<25} {:<20}".format(
-                review['id'],
-                review['rating'],
-                review['comment'][:30] + ("..." if len(review['comment']) > 30 else ""),
-                review['website_name'][:25],
-                review['reviewer_email'][:25],
-                review['created_at'].strftime('%Y-%m-%d %H:%M')
-            ))
+        print(f"\n{Fore.BLUE}{Back.WHITE}{ColoramaStyle.BRIGHT}{'ID':<5} {'Rating':<6} {'Comment':<30} {'Website':<25} {'Reviewer':<25} {'Created At':<20}{ColoramaStyle.RESET_ALL}")
+        print(f"{Fore.BLUE}{'-' * 120}{Fore.RESET}")
+        for i, review in enumerate(reviews):
+            bg_color = Fore.BLACK + Back.WHITE if i % 2 == 0 else ""
+            rating_color = Fore.GREEN if review['rating'] >= 4 else (Fore.RED if review['rating'] <= 2 else Fore.YELLOW)
+            
+            print(f"{bg_color}{review['id']:<5} {rating_color}{review['rating']:<6}{Fore.RESET}{bg_color} "
+                  f"{review['comment'][:30] + ('...' if len(review['comment']) > 30 else ''):<30} "
+                  f"{Fore.CYAN}{review['website_name'][:25]:<25}{Fore.RESET}{bg_color} "
+                  f"{review['reviewer_email'][:25]:<25} "
+                  f"{review['created_at'].strftime('%Y-%m-%d %H:%M'):<20}{Fore.RESET}")
         print()
 
     def admin_status_menu(self, user_id: int):
         """Menu for managing admin status"""
         while True:
+            print(f"\n{Fore.MAGENTA}{ColoramaStyle.BRIGHT}Admin Status Management{ColoramaStyle.RESET_ALL}")
+            print(f"{Fore.CYAN}1. Toggle admin status")
+            print(f"{Fore.CYAN}2. Back to main menu{Fore.RESET}")
+            
             choice = self.session.prompt(
-                "\nAdmin Status Management\n"
-                "1. Toggle admin status\n"
-                "2. Back to main menu\n\n"
-                "Enter your choice (1-2): ",
+                f"\n{Fore.GREEN}Enter your choice (1-2): {Fore.RESET}",
                 completer=WordCompleter(['1', '2']),
             ).strip()
 
@@ -313,18 +314,19 @@ class AdminManager(DatabaseManager):
             elif choice == '2':
                 return
             else:
-                print("Invalid choice. Please try again.")
+                print(f"{Fore.RED}Invalid choice. Please try again.{Fore.RESET}")
     
     def user_management_menu(self):
         """Menu for user management"""
         while True:
+            print(f"\n{Fore.MAGENTA}{ColoramaStyle.BRIGHT}User Management Menu{ColoramaStyle.RESET_ALL}")
+            print(f"{Fore.CYAN}1. List all users")
+            print(f"{Fore.CYAN}2. Toggle admin status")
+            print(f"{Fore.CYAN}3. Delete user")
+            print(f"{Fore.CYAN}4. Back to main menu{Fore.RESET}")
+            
             choice = self.session.prompt(
-                "\nUser Management Menu\n"
-                "1. List all users\n"
-                "2. Toggle admin status\n"
-                "3. Delete user\n"
-                "4. Back to main menu\n\n"
-                "Enter your choice (1-4): ",
+                f"\n{Fore.GREEN}Enter your choice (1-4): {Fore.RESET}",
                 completer=WordCompleter(['1', '2', '3', '4']),
             ).strip()
 
@@ -334,20 +336,20 @@ class AdminManager(DatabaseManager):
             elif choice in ['2', '3']:
                 users = self.list_users()
                 if not users:
-                    print("No users available")
+                    print(f"{Fore.YELLOW}No users available{Fore.RESET}")
                     continue
                     
                 self.print_users(users)
                 try:
                     user_id = int(self.session.prompt(
-                        "Enter ID of user to manage: ",
+                        f"{Fore.GREEN}Enter ID of user to manage: {Fore.RESET}",
                     ).strip())
                 except ValueError:
-                    print("Invalid ID. Please enter a number.")
+                    print(f"{Fore.RED}Invalid ID. Please enter a number.{Fore.RESET}")
                     continue
                     
                 if not any(u['id'] == user_id for u in users):
-                    print(f"No user found with ID {user_id}")
+                    print(f"{Fore.RED}No user found with ID {user_id}{Fore.RESET}")
                     continue
                 
                 if choice == '2':
@@ -357,17 +359,18 @@ class AdminManager(DatabaseManager):
             elif choice == '4':
                 return
             else:
-                print("Invalid choice. Please try again.")
+                print(f"{Fore.RED}Invalid choice. Please try again.{Fore.RESET}")
     
     def website_management_menu(self):
         """Menu for website management"""
         while True:
+            print(f"\n{Fore.MAGENTA}{ColoramaStyle.BRIGHT}Website Management Menu{ColoramaStyle.RESET_ALL}")
+            print(f"{Fore.CYAN}1. List all websites")
+            print(f"{Fore.CYAN}2. Delete website")
+            print(f"{Fore.CYAN}3. Back to main menu{Fore.RESET}")
+            
             choice = self.session.prompt(
-                "\nWebsite Management Menu\n"
-                "1. List all websites\n"
-                "2. Delete website\n"
-                "3. Back to main menu\n\n"
-                "Enter your choice (1-3): ",
+                f"\n{Fore.GREEN}Enter your choice (1-3): {Fore.RESET}",
                 completer=WordCompleter(['1', '2', '3']),
             ).strip()
 
@@ -377,37 +380,38 @@ class AdminManager(DatabaseManager):
             elif choice == '2':
                 websites = self.list_websites()
                 if not websites:
-                    print("No websites available")
+                    print(f"{Fore.YELLOW}No websites available{Fore.RESET}")
                     continue
                     
                 self.print_websites(websites)
                 try:
                     website_id = int(self.session.prompt(
-                        "Enter ID of website to delete: ",
+                        f"{Fore.GREEN}Enter ID of website to delete: {Fore.RESET}",
                     ).strip())
                 except ValueError:
-                    print("Invalid ID. Please enter a number.")
+                    print(f"{Fore.RED}Invalid ID. Please enter a number.{Fore.RESET}")
                     continue
                     
                 if not any(w['id'] == website_id for w in websites):
-                    print(f"No website found with ID {website_id}")
+                    print(f"{Fore.RED}No website found with ID {website_id}{Fore.RESET}")
                     continue
                 
                 self.delete_website(website_id)
             elif choice == '3':
                 return
             else:
-                print("Invalid choice. Please try again.")
+                print(f"{Fore.RED}Invalid choice. Please try again.{Fore.RESET}")
     
     def review_management_menu(self):
         """Menu for review management"""
         while True:
+            print(f"\n{Fore.MAGENTA}{ColoramaStyle.BRIGHT}Review Management Menu{ColoramaStyle.RESET_ALL}")
+            print(f"{Fore.CYAN}1. List all reviews")
+            print(f"{Fore.CYAN}2. Delete review")
+            print(f"{Fore.CYAN}3. Back to main menu{Fore.RESET}")
+            
             choice = self.session.prompt(
-                "\nReview Management Menu\n"
-                "1. List all reviews\n"
-                "2. Delete review\n"
-                "3. Back to main menu\n\n"
-                "Enter your choice (1-3): ",
+                f"\n{Fore.GREEN}Enter your choice (1-3): {Fore.RESET}",
                 completer=WordCompleter(['1', '2', '3']),
             ).strip()
 
@@ -417,42 +421,43 @@ class AdminManager(DatabaseManager):
             elif choice == '2':
                 reviews = self.list_reviews()
                 if not reviews:
-                    print("No reviews available")
+                    print(f"{Fore.YELLOW}No reviews available{Fore.RESET}")
                     continue
                     
                 self.print_reviews(reviews)
                 try:
                     review_id = int(self.session.prompt(
-                        "Enter ID of review to delete: ",
+                        f"{Fore.GREEN}Enter ID of review to delete: {Fore.RESET}",
                     ).strip())
                 except ValueError:
-                    print("Invalid ID. Please enter a number.")
+                    print(f"{Fore.RED}Invalid ID. Please enter a number.{Fore.RESET}")
                     continue
                     
                 if not any(r['id'] == review_id for r in reviews):
-                    print(f"No review found with ID {review_id}")
+                    print(f"{Fore.RED}No review found with ID {review_id}{Fore.RESET}")
                     continue
                 
                 self.delete_review(review_id)
             elif choice == '3':
                 return
             else:
-                print("Invalid choice. Please try again.")
+                print(f"{Fore.RED}Invalid choice. Please try again.{Fore.RESET}")
 
     def run(self):
         """Main application loop"""
-        print("\n" + "=" * 50)
-        print("Deployment Manager Admin Console".center(50))
-        print("=" * 50 + "\n")
+        print(f"\n{Fore.GREEN}" + "=" * 70 + Fore.RESET)
+        print(f"{Fore.WHITE}{Back.BLUE}{ColoramaStyle.BRIGHT}{'Deployment Manager Admin Console':^70}{ColoramaStyle.RESET_ALL}")
+        print(f"{Fore.GREEN}" + "=" * 70 + Fore.RESET)
         
         while True:
+            print(f"\n{Fore.MAGENTA}{ColoramaStyle.BRIGHT}Admin Manager - Main Menu{ColoramaStyle.RESET_ALL}")
+            print(f"{Fore.CYAN}1. User Management")
+            print(f"{Fore.CYAN}2. Website Management")
+            print(f"{Fore.CYAN}3. Review Management")
+            print(f"{Fore.CYAN}4. Exit{Fore.RESET}")
+            
             choice = self.session.prompt(
-                "\nAdmin Manager - Main Menu\n"
-                "1. User Management\n"
-                "2. Website Management\n"
-                "3. Review Management\n"
-                "4. Exit\n\n"
-                "Enter your choice (1-4): ",
+                f"\n{Fore.GREEN}Enter your choice (1-4): {Fore.RESET}",
                 completer=WordCompleter(['1', '2', '3', '4']),
             ).strip()
 
@@ -463,19 +468,19 @@ class AdminManager(DatabaseManager):
             elif choice == '3':
                 self.review_management_menu()
             elif choice == '4':
-                print("Exiting Admin Manager...")
+                print(f"{Fore.YELLOW}Exiting Admin Manager...{Fore.RESET}")
                 self.close()
                 sys.exit(0)
             else:
-                print("Invalid choice. Please try again.")
+                print(f"{Fore.RED}Invalid choice. Please try again.{Fore.RESET}")
 
 if __name__ == "__main__":
     try:
         manager = AdminManager()
         manager.run()
     except KeyboardInterrupt:
-        print("\nOperation cancelled by user")
+        print(f"\n{Fore.YELLOW}Operation cancelled by user{Fore.RESET}")
         sys.exit(0)
     except Exception as e:
-        print(f"Unexpected error: {str(e)}", file=sys.stderr)
+        print(f"{Fore.RED}Unexpected error: {str(e)}{Fore.RESET}", file=sys.stderr)
         sys.exit(1)
